@@ -3,6 +3,7 @@ const config = require('./config.js');
 const { Octokit } = require('@octokit/rest');
 const { retry } = require('@octokit/plugin-retry');
 const elasticsearch = require('elasticsearch');
+const mapping = require('./mapping.json');
 const moment = require('moment');
 
 const CACHE_INDEX = 'cache';
@@ -114,26 +115,41 @@ async function processGitHubIssues(owner, repo, response, page, indexName, logDi
 	}
 }
 
+async function getEntries(owner, repo) {
+	try {
+		return await client.search({
+			index: CACHE_INDEX,
+			_source: ['page', 'key'],
+			size: 10000,
+			body: {
+				query: {
+					bool: {
+						filter: [
+							{ match: { owner } },
+							{ match: { repo } }
+						]
+					}
+				}
+			}
+		});
+	} catch (e) {
+		if (e.status === 404) {
+			await client.indices.create({ method: 'PUT',
+				index: CACHE_INDEX,
+			});
+			return getEntries(owner, repo);
+		} else {
+			console.error(e);
+		}
+	}
+}
+
 /**
  * Load the existing cache for the specified repository. The result will be
  * in the format { [pageNr]: 'cacheKey' }.
  */
 async function loadCacheForRepo(owner, repo) {
-	const entries = await client.search({
-		index: CACHE_INDEX,
-		_source: ['page', 'key'],
-		size: 10000,
-		body: {
-			query: {
-				bool: {
-					filter: [
-						{ match: { owner } },
-						{ match: { repo } }
-					]
-				}
-			}
-		}
-	});
+	const entries = await getEntries(owner, repo);
 
 	if (entries.hits.total === 0) {
 		return {};
