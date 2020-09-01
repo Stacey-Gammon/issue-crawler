@@ -3,7 +3,6 @@ const config = require('./config.js');
 const { Octokit } = require('@octokit/rest');
 const { retry } = require('@octokit/plugin-retry');
 const elasticsearch = require('elasticsearch');
-const mapping = require('./mapping.json');
 const moment = require('moment');
 
 const CACHE_INDEX = 'cache';
