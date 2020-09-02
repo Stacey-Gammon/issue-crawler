@@ -1,8 +1,9 @@
 const repos = [
 	'elastic/kibana',
-	'elastic/kibana-team',
-	'elastic/eui',
-	'elastic/elastic-charts',
+//	'elastic/kibana-team',
+//	'elastic/eui',
+	//'elastic/elastic-charts',
+//	'stacey-gammon/kibana-dependency-tracking'
 ];
 
 const privateRepos = (process.env.PRIVATE_REPOS || '').split(',').filter(val => Boolean(val));

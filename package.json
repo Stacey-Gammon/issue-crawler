@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "author": "Tim Roes <mail@timroes.de>",
   "license": "Apache-2.0",
@@ -14,5 +14,8 @@
     "@octokit/rest": "^16.43.1",
     "elasticsearch": "^16.6.0",
     "moment": "^2.24.0"
+  },
+  "devDependencies": {
+    "jest": "^26.4.2"
   }
 }

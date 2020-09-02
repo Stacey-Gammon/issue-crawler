@@ -4,8 +4,10 @@ const { Octokit } = require('@octokit/rest');
 const { retry } = require('@octokit/plugin-retry');
 const elasticsearch = require('elasticsearch');
 const moment = require('moment');
+const { extractValues, extractValue, findLabel } = require('./utils');
 
 const CACHE_INDEX = 'cache';
+const CLEAR_CACHE = false;
 
 const client = new elasticsearch.Client(config.elasticsearch);
 
@@ -39,8 +41,30 @@ function convertIssue(owner, repo, raw) {
 	const time_to_fix = (raw.created_at && raw.closed_at) ?
 			moment(raw.closed_at).diff(moment(raw.created_at)) :
 			null;
+  // const companyThemes = getCompanyThemes(raw.labels);
+	// const makeItProjects = getMakeItProjects(raw.labels);
+	// const kibanaThemes = getKibanaThemes(raw.labels);
+  // const stage = getStage(raw.labels);
+	
+  const priority = extractValue(raw.labels, 'Impact');
+  const teams = extractValues(raw.labels, 'Team');
+  const dependent_teams = extractValues(raw.labels, 'Dependency');
+  const features = extractValues(raw.labels, 'Feature');
+  const themes = extractValues(raw.labels, 'Theme');
+  const projects = extractValues(raw.labels, 'Project');
+  const loe = extractValue(raw.labels, 'loe');
+  const is_tech_debt = findLabel(raw.labels, 'technical debt');
+
 	return {
+		loe,
 		id: raw.id,
+		themes,
+		projects,
+		features,
+		priority,
+		teams,
+		is_tech_debt,
+		dependent_teams,
 		last_crawled_at: Date.now(),
 		owner: owner,
 		repo: repo,
@@ -172,7 +196,7 @@ async function main() {
 		while(shouldCheckNextPage) {
 			console.log(`[${displayName}#${page}] Requesting issues using etag: ${cache[page]}`);
 			try {
-				const headers = cache[page] ? { 'If-None-Match': cache[page] } : {};
+				const headers = cache[page] && !CLEAR_CACHE ? { 'If-None-Match': cache[page] } : {};
 				const response = await octokit.issues.listForRepo({
 					owner,
 					repo,
@@ -180,7 +204,7 @@ async function main() {
 					per_page: 100,
 					state: 'all',
 					sort: 'created',
-					direction: 'asc',
+					direction: 'desc',
 					headers: headers
 				});
 				console.log(`[${displayName}#${page}] Remaining request limit: %s/%s`,
