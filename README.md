@@ -13,3 +13,13 @@ yarn build
 ```
 yarn start
 ```
+
+## To run tests
+
+Jest has to run only on the js files so run
+
+```
+yarn jest build
+```
+
+Don't forget to build after any changes!

@@ -39,7 +39,7 @@ export interface KibanaIssue {
   teams: Array<string>;
   features: Array<string>;
   loe?: string;
-  id: number;
+  id: string;
   projects: Array<string>;
   project_board?: string;
   stage?: string;
@@ -138,7 +138,7 @@ export function convertIssue(
 
       const issue: KibanaIssue = {
         loe,
-        id: raw.id,
+        id: raw.id + 'p' + projectBoard.name,
         priority_num,
         projects,
         project_board: projectBoard.name,

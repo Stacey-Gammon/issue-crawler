@@ -104,7 +104,12 @@ async function getColumns(octokit: Octokit, projectId: number, projects: Project
   }));
 }
 
-export async function getProjects(octokit: Octokit, owner: string, repo: string, issues: Record<string, Array<IssueProjectInfo>>) {
+export async function getProjects(
+    octokit: Octokit,
+    owner: string,
+    repo: string,
+    issues: Record<string, Array<IssueProjectInfo>>,
+    test: boolean) {
   const projects: ProjectMapping = {};
   await new Promise(resolve => setTimeout(resolve, 3000));
 
@@ -144,7 +149,8 @@ export async function getProjects(octokit: Octokit, owner: string, repo: string,
         columns: {}
       };
       await getColumns(octokit, project.id, projects, issues);
-    }
+    }, 
+    test
   );
   return projects;
 }

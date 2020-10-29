@@ -4,9 +4,11 @@
   "description": "Crawls GitHub issues and index them into an Elasticsearch instance",
   "main": "index.js",
   "scripts": {
-    "start": "node build/index.js",
-    "test": "jest",
-    "build": "tsc"
+    "start": "tsc && node build/index.js",
+    "test": "tsc && jest",
+    "build": "tsc",
+    "crawlCode": "tsc && node build/code_crawler.js",
+    "crawlIssues": "tsc && node build/issue_crawler.js"
   },
   "author": "Tim Roes <mail@timroes.de>",
   "license": "Apache-2.0",
@@ -14,12 +16,19 @@
     "@octokit/plugin-retry": "^3.0.1",
     "@octokit/rest": "^18.0.6",
     "elasticsearch": "^16.6.0",
-    "moment": "^2.24.0"
+    "find": "^0.3.0",
+    "moment": "^2.24.0",
+    "simple-git": "^2.21.0",
+    "sloc": "^0.2.1",
+    "tmp": "^0.2.1"
   },
   "devDependencies": {
     "@octokit/types": "^5.5.0",
     "@types/elasticsearch": "^5.0.36",
+    "@types/find": "^0.2.1",
     "@types/jest": "^26.0.14",
+    "@types/sloc": "^0.2.0",
+    "@types/tmp": "^0.2.0",
     "jest": "^26.4.2",
     "typescript": "^4.0.2"
   }

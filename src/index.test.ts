@@ -1,5 +1,5 @@
-
-import { extractValues , extractVersionNumber, extractIssueNumber} from './utils';
+import { extractValues , extractVersionNumber, extractIssueNumber } from './utils';
+import { getTeamOwner, processCodeOwnersFile } from './code_crawler';
 
 it('extractValue', () => {
   const themes = extractValues([{ name: 'Dependency:SIEM' }, { name: 'Feature:Bi hoo' }], 'Feature');
@@ -22,4 +22,19 @@ it('extractVersionNumber', () => {
 
 
   expect(extractVersionNumber('7.14 - tentative')).toEqual('7.14');
+})
+
+it('getTeamOwner', () => {
+  const owner = getTeamOwner('/blah/x-pack/legacy/plugins/beats_management/mm', { '/x-pack/legacy/plugins/beats_management/': '@elastic/beats' });
+  expect(owner).toBe('beats');
+})
+
+it('processCodeOwnersFile', () => {
+  const owners = processCodeOwnersFile(`
+# hi
+#CC# /path/to @elastic/a-team
+/another/path/to @elastic/b-team`, ''
+);
+  expect(owners['/path/to']).toEqual('a-team');
+  expect(owners['/another/path/to']).toEqual('b-team');
 })

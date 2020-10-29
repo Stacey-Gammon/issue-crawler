@@ -5,6 +5,27 @@
   },
   "mappings": {
     "properties": {
+      "release_status": {
+        "type": "keyword"
+      },
+      "release_target": {
+        "type": "keyword"
+      },
+      "previous_release_target": {
+        "type": "keyword"
+      },
+      "project_board": {
+        "type": "keyword"
+      },
+      "original_release_target": {
+        "type": "keyword"
+      },
+      "stage": {
+        "type": "keyword"
+      },
+      "priority": {
+        "type": "keyword"
+      },
       "id": {
         "type": "keyword"
       },

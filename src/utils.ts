@@ -1,5 +1,4 @@
-import { Octokit } from "@octokit/rest";
-import { RequestParameters, OctokitResponse } from "@octokit/types";
+import { OctokitResponse } from "@octokit/types";
 
 export function extractValue(labels: Array<{ name: string }>, value: string) {
 	let val;
@@ -36,14 +35,15 @@ export function logRateLimit(response: { headers: Record<string, unknown> }, pre
 export async function mapResponses<Request, ResponseData>(
 		request: Request,
 		doQuery: (req: Request & { page: number }) => Promise<OctokitResponse<Array<ResponseData>>>,
-		callback: (results: ResponseData) => void) {
+		callback: (results: ResponseData) => void,
+		test: boolean = false) {
 	let shouldCheckNextPage: boolean = true;
 	let page = 1;
 	while(shouldCheckNextPage) {
 		const response = await doQuery({ ...request, page });
 		response.data[1]
 		await Promise.all(response.data.map(async data => await callback(data)));
-		shouldCheckNextPage = !!(response.headers.link && response.headers.link.includes('rel="next"'));
+		shouldCheckNextPage = !test && !!(response.headers.link && response.headers.link.includes('rel="next"'));
 		logRateLimit(response, 'mapResponses');
 		page++;
 		await new Promise(resolve => setTimeout(resolve, 2000));
