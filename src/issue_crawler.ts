@@ -247,7 +247,4 @@ export async function crawlIssues() {
 		...repos.map(rep => handleRepository(rep)),
 		...(privateRepos.length > 0 ? privateRepos.map((rep, index) => handleRepository(rep, `PRIVATE_REPOS[${index}]`, true)) : [])
 	]);
-
-	process.exit();
 }
-

@@ -7,6 +7,7 @@ import path from 'path';
 import find from 'find';
 import sloc from 'sloc';
 import tmp from 'tmp';
+import { fillPlugins, PluginInfo } from "./fill_plugins";
 
 const client = new elasticsearch.Client(elasticsearchEnv);
 
@@ -42,51 +43,13 @@ interface FileDocAttributes extends AnalyzedFile {
   indexDate: string;
 };
 
-const plugins: Array<PluginDoc> = [];
-
-export function getTeamOwner(filePath: string, owners: { [key: string]: string }): string {
-  const prefix = Object.keys(owners).find(prefix => filePath.includes(prefix));
-  const owner = prefix ? owners[prefix] : 'noOwner';
+export function getTeamOwner(filePath: string, plugins: Array<PluginInfo>): string {
+  const plugin = plugins.find(plugin => filePath.includes(plugin.path));
+  const owner = plugin ? plugin.teamOwner : 'noOwner';
   if (owner.trim() === '') {
     console.warn('Empty team owner for path ' + filePath);
   }
   return owner;
-}
-
-function getTeamName(teamTag: string) {
-  return teamTag.substring(teamTag.indexOf('/') + 1);
-}
-
-export function processCodeOwnersFile(codeOwnersFile: string, dirPrefix: string): { [key: string]: string } {
-  const pathToOwnerMap: { [key: string]: string }  = {};
-  codeOwnersFile.split('\n').forEach(line => {
-    const pieces = line.split(' ');
-    let path = '';
-    if (line.startsWith("#CC")) {
-      path = pieces[1];
-    } else if (line.startsWith('/')) {
-      path = pieces[0];
-    }
-    const teamName = getTeamName(pieces[pieces.length - 1]);
-    if (teamName.trim() === '' && path !== '') {
-      console.warn('Empty team name for path ' + path);
-    }
-    if (path != '') {
-      pathToOwnerMap[path] = teamName;
-
-      if (path.includes('/plugins/') && !path.includes('*')) {
-        const pathParts = path.split('/');
-        let pluginName = pathParts[pathParts.length - 1];
-        if (pluginName.trim() === '') {
-          pluginName = pathParts[pathParts.length - 2];
-        }
-        const hasReadme = fs.existsSync(dirPrefix + path + 'README.asciidoc') || fs.existsSync(dirPrefix + path + 'README.md') || path.includes('**');
-
-        plugins.push({ name: pluginName, missingReadme: hasReadme ? 0 : 1, teamOwner: teamName });
-      }
-    }
-  });
-  return pathToOwnerMap;
 }
 
 function filterFile(file: string) {
@@ -99,18 +62,14 @@ function filterFile(file: string) {
   );
 }
 
-function  isTestFile(file: string) {
-
-}
 
 async function analyze(localPath: string) {
   console.log(`Analyzing ${localPath}`);
 
-  const codeOwners = processCodeOwnersFile(fs.readFileSync(`${localPath}/.github/CODEOWNERS`, { encoding: "utf8" }), localPath);
-  
-  console.log('plugins info is ', );
+  const plugins: Array<PluginInfo> = [];
+  fillPlugins(fs.readFileSync(`${localPath}/.github/CODEOWNERS`, { encoding: "utf8" }), localPath, plugins);
   console.table(plugins);
-  indexPluginInfo();
+  indexPluginInfo(plugins);
 
   const rootDirDepth = localPath.split(path.sep).length;
   const files = await findFiles(localPath);
@@ -133,7 +92,7 @@ async function analyze(localPath: string) {
           "dangerouslyGetActiveInjector",
         ];
 
-        const teamOwner = getTeamOwner(file, codeOwners);
+        const teamOwner = getTeamOwner(file, plugins);
         const anyCount = (code.match(/: any/g) || []).length;
         const loc = (code.match(/\n/g) || []).length;
 
@@ -154,8 +113,6 @@ async function analyze(localPath: string) {
           ),
           hasUiPublic: code.includes("from 'ui/")
         };
-
-        //console.log(`${file} is owned by ${teamOwner} and has ${anyCount} anys`);
         return attributes;
       }
     });
@@ -199,10 +156,25 @@ const getDocument = (commitHash: string, commitDate: string, repo: string, check
 
 async function indexFiles(files:  Array<FileDocAttributes | undefined>, repo: string) {
   console.log(`Indexing data from ${files.length} files`);
-  const body: any[] = [];
+  let body: any[] = [];
   files.forEach(file => {
     if (file) {
-      body.push({ index: { _index: getIndexName(repo), _type: "_doc" } });
+      body.push({ index: { _index: getIndexName(repo), _type: "_doc", _id: `${file.commitHash}${file.fullFilename.replace('/', '')}` } });
+      body.push(file);
+    }
+  });
+  try {
+    await client.bulk({
+      body
+    });
+  } catch (e) {
+    console.error(e);
+  }
+
+  body = [];
+  files.forEach(file => {
+    if (file) {
+      body.push({ index: { _index: `latest-${getIndexName(repo)}`, _type: "_doc", _id: `${file.fullFilename.replace('/', '')}` } });
       body.push(file);
     }
   });
@@ -215,13 +187,7 @@ async function indexFiles(files:  Array<FileDocAttributes | undefined>, repo: st
   }
 }
 
-interface PluginDoc {
-  name: string;
-  missingReadme: number;
-  teamOwner: string;
-}
-
-async  function indexPluginInfo() {
+async  function indexPluginInfo(plugins: Array<PluginInfo>) {
   console.log(`Indexing data from ${plugins.length} plugins`);
   const body: any[] = [];
   plugins.forEach(plugin => {
@@ -251,7 +217,7 @@ export async function crawlCode() {
       console.log(`Clone completed`);
       for (const checkout of checkouts) {
         console.log(`Indexing current state of ${checkout}`);
-        await currentGit.checkout(checkout);
+        //await currentGit.checkout(checkout);
         const commitHash = await currentGit.raw(["rev-parse", "HEAD"]);
         const commitDate = new Date(
           await currentGit.raw(["log", "-1", "--format=%cd"])

@@ -1,5 +1,6 @@
 import { extractValues , extractVersionNumber, extractIssueNumber } from './utils';
-import { getTeamOwner, processCodeOwnersFile } from './code_crawler';
+import { getTeamOwner } from './code_crawler';
+import { fillPlugins } from './fill_plugins';
 
 it('extractValue', () => {
   const themes = extractValues([{ name: 'Dependency:SIEM' }, { name: 'Feature:Bi hoo' }], 'Feature');
@@ -25,16 +26,14 @@ it('extractVersionNumber', () => {
 })
 
 it('getTeamOwner', () => {
-  const owner = getTeamOwner('/blah/x-pack/legacy/plugins/beats_management/mm', { '/x-pack/legacy/plugins/beats_management/': '@elastic/beats' });
+  const owner = getTeamOwner('/blah/x-pack/legacy/plugins/beats_management/mm', [
+    { path: '/x-pack/legacy/plugins/beats_management/', name: 'beats_management', teamOwner: 'beats', missingReadme: 0 }]);
   expect(owner).toBe('beats');
-})
+});
 
-it('processCodeOwnersFile', () => {
-  const owners = processCodeOwnersFile(`
-# hi
-#CC# /path/to @elastic/a-team
-/another/path/to @elastic/b-team`, ''
-);
-  expect(owners['/path/to']).toEqual('a-team');
-  expect(owners['/another/path/to']).toEqual('b-team');
-})
+// it('extractPluginName', () => {
+//   expect(extractPluginNameAndPath('/x-pack/plugins/apm/asdjfklsa')!.pluginPath).toEqual('/x-pack/plugins/apm');
+//   expect(extractPluginNameAndPath('/x-pack/plugins/apm/asdjfklsa')!.pluginName).toEqual('apm');
+//   expect(extractPluginNameAndPath('/x-pack/plugins/apm')!.pluginName).toEqual('apm');
+//   expect(extractPluginNameAndPath('/x-pack/plugins/apm')!.pluginPath).toEqual('/x-pack/plugins/apm');
+// });
