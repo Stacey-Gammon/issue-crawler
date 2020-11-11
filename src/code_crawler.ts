@@ -205,19 +205,18 @@ async  function indexPluginInfo(plugins: Array<PluginInfo>) {
   }
 }
 
-
 export async function crawlCode() {
   for (const { repo, checkouts } of codeRepos) {
-    const tmpDir = { name: '/Users/gammon/Elastic/kibana' };//tmp.dirSync();
+    const tmpDir = tmp.dirSync(); // { name: '/Users/gammon/Elastic/kibana' };/
     console.log(`Processing ${repo}, using ${tmpDir.name}`);
     const currentGit = git(tmpDir.name);
     try {
       console.log(`Cloning ${repo}...`);
-      //await currentGit.clone(`https://github.com/${repo}.git`, tmpDir.name);
+      await currentGit.clone(`https://github.com/${repo}.git`, tmpDir.name);
       console.log(`Clone completed`);
       for (const checkout of checkouts) {
         console.log(`Indexing current state of ${checkout}`);
-        //await currentGit.checkout(checkout);
+        await currentGit.checkout(checkout);
         const commitHash = await currentGit.raw(["rev-parse", "HEAD"]);
         const commitDate = new Date(
           await currentGit.raw(["log", "-1", "--format=%cd"])
@@ -245,6 +244,6 @@ export async function crawlCode() {
     } catch (e) {
       console.log(`Indexing ${repo} failed: `, e);
     }
-   // tmpDir.removeCallback();
+    tmpDir.removeCallback();
   }
 }
