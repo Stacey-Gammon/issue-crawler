@@ -7,6 +7,7 @@
     "start": "tsc && node build/index.js",
     "test": "tsc && jest",
     "build": "tsc",
+    "crawlRefs": "tsc && node build/api_reference_crawler/run.js",
     "crawlCode": "tsc && node build/code_crawler.js",
     "crawlIssues": "tsc && node build/issue_crawler.js"
   },
@@ -30,6 +31,7 @@
     "@types/sloc": "^0.2.0",
     "@types/tmp": "^0.2.0",
     "jest": "^26.4.2",
+    "ts-morph": "^8.1.2",
     "typescript": "^4.0.2"
   }
 }

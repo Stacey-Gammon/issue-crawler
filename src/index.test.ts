@@ -1,6 +1,5 @@
 import { extractValues , extractVersionNumber, extractIssueNumber } from './utils';
-import { getTeamOwner } from './code_crawler';
-import { fillPlugins } from './fill_plugins';
+import { getKibanaRelativePath, getTeamOwner } from './plugin_utils';
 
 it('extractValue', () => {
   const themes = extractValues([{ name: 'Dependency:SIEM' }, { name: 'Feature:Bi hoo' }], 'Feature');
@@ -29,6 +28,11 @@ it('getTeamOwner', () => {
   const owner = getTeamOwner('/blah/x-pack/legacy/plugins/beats_management/mm', [
     { path: '/x-pack/legacy/plugins/beats_management/', name: 'beats_management', teamOwner: 'beats', missingReadme: 0 }]);
   expect(owner).toBe('beats');
+});
+
+it('getKibanaRelativePath', () => {
+  expect(getKibanaRelativePath('/Users/gammon/Elastic/kibana/examples/embeddable_examples/public/book/book_embeddable_factory.tsx'))
+    .toBe('kibana/examples/embeddable_examples/public/book/book_embeddable_factory.tsx')
 });
 
 // it('extractPluginName', () => {
