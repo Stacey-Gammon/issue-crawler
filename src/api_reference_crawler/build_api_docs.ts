@@ -3,7 +3,8 @@ import { PublicAPIDoc, ReferenceDoc } from "./service";
 
 import { Project } from "ts-morph";
 import { getBasicPluginInfo, getCodeOwnersFile, getPluginForPath } from "../plugin_utils";
-import { findPluginAPIUsages, findStaticExportReferences } from "./find_service_references";
+import { findPluginAPIUsages } from "./find_references";
+import { findStaticExportReferences } from "./find_static_references";
 
 export function collectApiInfo(path: string): { refDocs: Array<ReferenceDoc>, apiDocs: Array<PublicAPIDoc> } {
   const project = new Project({ tsConfigFilePath: `${path}/tsconfig.json` });

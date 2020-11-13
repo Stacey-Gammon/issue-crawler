@@ -108,15 +108,17 @@ export function fillBasicTeamPlugins(
       const isPlugin = fs.existsSync(dirPrefix + path + '/kibana.json') || path.indexOf('src/core') >= 0;
       if (isPlugin && !path.includes('plugin_functional') && !path.includes('/test/')) {
         const parts = path.split('/');
-        const hasReadme = fs.existsSync(dirPrefix + path + '/README.asciidoc') || fs.existsSync(dirPrefix + path + '/README.md');
-        const name = path.indexOf('src/core') >= 0 ? 'core' :
-          parts[parts.length - 1].trim() !== '' ? parts[parts.length - 1].trim() :
+        const lastPathName = parts[parts.length - 1].trim() !== '' ?
+          parts[parts.length - 1].trim() :
           parts[parts.length - 2].trim();
+        const name = path.indexOf('src/core') >= 0 ? 'core' : lastPathName;
 
-        if (plugins.find(p => p.name === name)) {
+        if (plugins.find(p => p.name === name) !== undefined) {
           console.warn('WARN: duplicate plugin found ' + name);
           return;
         }
+
+        console.log('adding plugin with name '+ name);
         plugins.push({
           name,
           path,
@@ -157,23 +159,26 @@ export function fillTeamPlugins(
       if (isPlugin && !path.includes('plugin_functional') && !path.includes('/test/')) {
         const parts = path.split('/');
         const hasReadme = fs.existsSync(dirPrefix + path + '/README.asciidoc') || fs.existsSync(dirPrefix + path + '/README.md');
-        const name = path.indexOf('src/core') >= 0 ? 'core' :
-          parts[parts.length - 1].trim() !== '' ? parts[parts.length - 1].trim() :
+        const lastPathName = parts[parts.length - 1].trim() !== '' ?
+          parts[parts.length - 1].trim() :
           parts[parts.length - 2].trim();
+        const name = path.indexOf('src/core') >= 0 ? 'core' : lastPathName;
 
         if (plugins.find(p => p.name === name)) {
           console.warn('WARN: duplicate plugin found ' + name);
           return;
         }
+
+        console.log('adding plugin with name '+ name);
         plugins.push({
           name,
           path,
           missingReadme: hasReadme ? 0 : 1, 
           teamOwner,
-          hasPublicApi: allApiDocs.find(a => a.name === name) ? true : false,
+          hasPublicApi: allApiDocs.find(a => a.plugin === name) ? true : false,
           refCount: allApiDocs.reduce(
             (sum: number, a) => {
-              return a.plugin === name ? sum + a.refCount : sum;
+              return a.plugin === name ? sum + (a.refCount || 0) : sum;
             }, 0),
         });
       } else {

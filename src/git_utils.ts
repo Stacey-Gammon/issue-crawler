@@ -25,9 +25,12 @@ export async function checkoutRepo(repo: string, dir?: string):
   }
 
   const commitHash = await currentGit.raw(["rev-parse", "HEAD"]);
-  const commitDate = new Date(
+  const commitDate = await getCommitDate(currentGit);
+  return { repoPath: tmpDir.name, commitHash, commitDate, currentGit };
+}
+
+export async function getCommitDate(currentGit: SimpleGit)  {
+  return new Date(
     await currentGit.raw(["log", "-1", "--format=%cd"])
   ).toISOString();
-
-  return { repoPath: tmpDir.name, commitHash, commitDate, currentGit };
 }

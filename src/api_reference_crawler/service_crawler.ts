@@ -1,16 +1,13 @@
 
-import git from "simple-git/promise";
 import  elasticsearch from 'elasticsearch';
 import  { elasticsearchEnv } from '../config';
-import fs from 'fs';
-import { Project } from "ts-morph";
 
-import { getPluginForPath, getPluginInfo, getPluginInfoForPath, indexPluginInfo, PluginInfo } from "../plugin_utils";
+import { getPluginInfoForPath, indexPluginInfo, PluginInfo } from "../plugin_utils";
 import { PublicAPIDoc, ReferenceDoc } from "./service";
 import { collectApiInfo } from './build_api_docs';
 import { getIndexName, indexDocs } from "../es_utils";
 import { checkoutDates, repo } from "./config";
-import { checkoutRepo } from "../git_utils";
+import { checkoutRepo, getCommitDate } from "../git_utils";
 
 const client = new elasticsearch.Client(elasticsearchEnv);
 
@@ -19,7 +16,7 @@ const apiIndexName = getIndexName('api', repo);
 
 function getDocId(commitHash: string, doc: ReferenceDoc) {
   return `
-    ${commitHash}${doc.source.plugin}${doc.source.file.path.replace('/', '')}${doc.source.name}.${doc.reference.file}
+    ${commitHash}${doc.source.plugin}${doc.source.file.path.replace('/', '')}${doc.source.name}.${doc.reference.file.path.replace('/', '')}
   `
 }
 
@@ -28,13 +25,14 @@ function getApiDocId(commitHash: string, doc: PublicAPIDoc) {
 }
 
 export async function crawlServices() {
-  const { commitHash, commitDate, repoPath, currentGit } = await checkoutRepo(repo, '/Users/gammon/Elastic/kibana');
+  const { commitHash, repoPath, currentGit } = await checkoutRepo(repo, '/Users/gammon/Elastic/kibana');
 
   try {
     for (const date of checkoutDates) {
-      const checkout = date ? `master@${date}` : 'master';
+      const checkout = date ? `master@{${date}}` : 'master';
       await currentGit.checkout(checkout);
       console.log(`Indexing current state of master with ${checkout}`);
+      const commitDate = await getCommitDate(currentGit);
 
       const { apiDocs, refDocs } = collectApiInfo(repoPath);
       

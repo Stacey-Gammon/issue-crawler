@@ -1,5 +1,6 @@
 export interface ReferenceDoc {
   source: {
+    id: string;
     file: { path: string };
     plugin: string;
     team: string;
@@ -16,10 +17,11 @@ export interface ReferenceDoc {
 
 export interface PublicAPIDoc {
   plugin: string;
+  id: string;
   file: { path: string };
   name: string;
   team: string;
-  refCount: number;
+  refCount?: number;
   type: string;
   isStatic: boolean;
 }
