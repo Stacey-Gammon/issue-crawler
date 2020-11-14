@@ -10,7 +10,7 @@ import tmp from 'tmp';
 import { BasicPluginInfo, getBasicPluginInfo, getCodeOwnersFile, getTeamOwner, PluginInfo } from "../plugin_utils";
 import { getIndexName, indexDocs } from "../es_utils";
 import { repo, checkoutDates } from './config';
-import { checkoutRepo } from "../git_utils";
+import { checkoutRepo, getCommitDate, getCommitHash } from "../git_utils";
 
 const client = new elasticsearch.Client(elasticsearchEnv);
 
@@ -156,13 +156,15 @@ async function indexFiles(files:  Array<FileDocAttributes | undefined>, repo: st
 }
 
 export async function crawlCode() {
-  const { commitHash, commitDate, repoPath, currentGit } = await checkoutRepo(repo, '/Users/gammon/Elastic/kibana');
+  const { repoPath, currentGit } = await checkoutRepo(repo, '/Users/gammon/Elastic/kibana');
   try {
     for (const date of checkoutDates) {
       const checkout = date ? `master@${date}` : 'master';
       await currentGit.checkout(checkout);
       console.log(`Indexing current state of master with ${checkout}`);
 
+      const commitHash = await getCommitHash(currentGit);
+      const commitDate = await getCommitDate(currentGit);
       // if (await alreadyIndexed(repo, commitHash)) {
       //   console.log(
       //     `${repo} ${checkout} (${commitHash}) already indexed, skipping`

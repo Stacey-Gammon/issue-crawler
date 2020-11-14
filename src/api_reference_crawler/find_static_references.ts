@@ -30,7 +30,6 @@ export function findStaticExportReferences(source: SourceFile, sourcePlugin: Bas
       if ((ed as FunctionDeclaration).getName && (
           (ed as FunctionDeclaration).getName() === 'plugin' ||
           (ed as FunctionDeclaration).getName() === 'config')) {
-        console.log('Skipping plugin and config exports, they are special and not part of the public API');
         return;
       }
 

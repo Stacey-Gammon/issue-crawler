@@ -11,7 +11,7 @@ export interface GitInfo {
 }
 
 export async function checkoutRepo(repo: string, dir?: string):
-  Promise<{ repoPath: string, commitHash: string, commitDate: string, currentGit: SimpleGit }> {
+  Promise<{ repoPath: string, currentGit: SimpleGit }> {
   const tmpDir = dir ? { name: dir } : tmp.dirSync();
  
   console.log(`Processing ${repo}, using ${tmpDir.name}`);
@@ -23,10 +23,11 @@ export async function checkoutRepo(repo: string, dir?: string):
     await currentGit.clone(`https://github.com/${repo}.git`, tmpDir.name);
     console.log(`Clone completed`);
   }
+  return { repoPath: tmpDir.name, currentGit };
+}
 
-  const commitHash = await currentGit.raw(["rev-parse", "HEAD"]);
-  const commitDate = await getCommitDate(currentGit);
-  return { repoPath: tmpDir.name, commitHash, commitDate, currentGit };
+export async function getCommitHash(currentGit: SimpleGit) {
+  return await currentGit.raw(["rev-parse", "HEAD"]);
 }
 
 export async function getCommitDate(currentGit: SimpleGit)  {

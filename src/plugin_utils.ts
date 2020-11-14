@@ -118,7 +118,6 @@ export function fillBasicTeamPlugins(
           return;
         }
 
-        console.log('adding plugin with name '+ name);
         plugins.push({
           name,
           path,
@@ -169,7 +168,6 @@ export function fillTeamPlugins(
           return;
         }
 
-        console.log('adding plugin with name '+ name);
         plugins.push({
           name,
           path,

@@ -7,7 +7,7 @@ import { PublicAPIDoc, ReferenceDoc } from "./service";
 import { collectApiInfo } from './build_api_docs';
 import { getIndexName, indexDocs } from "../es_utils";
 import { checkoutDates, repo } from "./config";
-import { checkoutRepo, getCommitDate } from "../git_utils";
+import { checkoutRepo, getCommitDate, getCommitHash } from "../git_utils";
 
 const client = new elasticsearch.Client(elasticsearchEnv);
 
@@ -25,7 +25,7 @@ function getApiDocId(commitHash: string, doc: PublicAPIDoc) {
 }
 
 export async function crawlServices() {
-  const { commitHash, repoPath, currentGit } = await checkoutRepo(repo, '/Users/gammon/Elastic/kibana');
+  const { repoPath, currentGit } = await checkoutRepo(repo, '/Users/gammon/Elastic/kibana');
 
   try {
     for (const date of checkoutDates) {
@@ -33,7 +33,8 @@ export async function crawlServices() {
       await currentGit.checkout(checkout);
       console.log(`Indexing current state of master with ${checkout}`);
       const commitDate = await getCommitDate(currentGit);
-
+      const commitHash = await getCommitHash(currentGit);
+      
       const { apiDocs, refDocs } = collectApiInfo(repoPath);
       
       await indexDocs<ReferenceDoc>(client, refDocs, commitHash, commitDate, refsIndexName, (doc: ReferenceDoc) => getDocId(commitHash, doc));
