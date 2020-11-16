@@ -116,6 +116,7 @@ export function extractStaticReferencesToEntity(
     console.error(`${identifier} is missing entity name. Text is ${entity.getText(true)}`);
     return [];
   }
+  console.log('Getting references for api ' + identifier);
   addExportReferences(entity.findReferences(), entity.getName()!, sourceInfo, plugins, refs, true);
   return refs;
 }

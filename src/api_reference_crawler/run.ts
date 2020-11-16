@@ -1,4 +1,4 @@
 
-import { crawlServices} from './service_crawler';
+import { crawlServices} from './crawl_api';
 
 crawlServices();

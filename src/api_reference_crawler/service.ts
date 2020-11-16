@@ -3,8 +3,8 @@ export interface ReferenceDoc {
     id: string;
     file: { path: string };
     plugin: string;
-    team: string;
     name: string;
+    team: string;
     lifecycle?: string;
     isStatic?: boolean;
   }

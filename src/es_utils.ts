@@ -55,3 +55,20 @@ export async function indexDocs<Doc>(client: Client, docs: Array<Doc>, commitHas
     console.error(e);
   }
 }
+
+export async function createIndex(client: Client, repo: string, properties: Object) {
+  try {
+    await client.indices.create({ method: 'PUT',
+      index: repo,
+      body: {
+        mappings: {
+          properties
+        },
+      },
+    });
+  } catch (e) {
+    if (e.statusCode != '400') {
+      console.error(e);
+    }
+  }
+}

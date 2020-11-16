@@ -7,16 +7,18 @@ export interface BasicPluginInfo {
   name: string;
   teamOwner: string;
   path: string;
+  missingReadme: number;
 }
 
 export interface PluginInfo extends BasicPluginInfo {
-  missingReadme: number;
   hasPublicApi: boolean;
   refCount: number;
 }
 
-export function getPluginForPath<I extends BasicPluginInfo = BasicPluginInfo>(filePath: string, plugins: Array<I>): I | undefined {
-  return plugins.find(plugin => filePath.includes(plugin.path));
+export function getPluginForPath<I extends BasicPluginInfo = BasicPluginInfo>(
+  path: string,
+  plugins: Array<I>): I | undefined {
+  return plugins.find(plugin => path.includes(plugin.path));
 }
 
 export function getKibanaRelativePath(fullFilePath: string) {
@@ -36,35 +38,10 @@ function getTeamName(teamTag: string) {
   return teamTag.substring(teamTag.indexOf('/') + 1);
 }
 
-export function getBasicPluginInfo(
-  codeOwnersFileContents: string,
-  dirPrefix: string): Array<BasicPluginInfo> {
-    const plugins: Array<BasicPluginInfo> = [];
-    const pathToOwnerMap: { [key: string]: string }  = {};
-    codeOwnersFileContents.split('\n').forEach(line => {
-      const pieces = line.split(' ');
-      let path = '';
-      if (line.startsWith("#CC")) {
-        path = pieces[1];
-      } else if (line.startsWith('/')) {
-        path = pieces[0];
-      }
-      const teamName = getTeamName(pieces[pieces.length - 1]);
-      if (teamName.trim() === '' && path !== '') {
-        console.warn('Empty team name for path ' + path);
-      }
-      if (path != '') {
-        pathToOwnerMap[path] = teamName;
-        fillBasicTeamPlugins(path, dirPrefix, teamName, plugins, true);
-      }
-    });
-    return plugins;
-  }
-
-export function getPluginInfo(
+export function extractPluginsFromCodeOwners(
   codeOwnersFileContents: string,
   dirPrefix: string,
-  allApiDocs: Array<PublicAPIDoc>) {
+  allApiDocs?: Array<PublicAPIDoc>) {
   const plugins: Array<PluginInfo> = [];
   const pathToOwnerMap: { [key: string]: string }  = {};
   codeOwnersFileContents.split('\n').forEach(line => {
@@ -81,12 +58,15 @@ export function getPluginInfo(
     }
     if (path != '') {
       pathToOwnerMap[path] = teamName;
-      fillTeamPlugins(path, dirPrefix, teamName, plugins, allApiDocs, true);
+      if (allApiDocs) {
+        fillTeamPlugins(path, dirPrefix, teamName, plugins, allApiDocs, true);
+      } else {
+        fillBasicTeamPlugins(path, dirPrefix, teamName, plugins, true);
+      }
     }
   });
   return plugins;
 }
-
 
 export function fillBasicTeamPlugins(
   path: string,
@@ -94,46 +74,13 @@ export function fillBasicTeamPlugins(
   teamOwner: string,
   plugins: Array<BasicPluginInfo> = [],
   inCodeOwnersFile: boolean = false) {
-
-  if (path.indexOf('src/core') >= 0) {
-    if (plugins.find(p => p.name === 'core')) {
-      return;
-    }
-    path = '/src/core/';
-  } 
-
-  try {
-    const stats = fs.statSync(dirPrefix + path);
-    if (stats.isDirectory()) {
-      const isPlugin = fs.existsSync(dirPrefix + path + '/kibana.json') || path.indexOf('src/core') >= 0;
-      if (isPlugin && !path.includes('plugin_functional') && !path.includes('/test/')) {
-        const parts = path.split('/');
-        const lastPathName = parts[parts.length - 1].trim() !== '' ?
-          parts[parts.length - 1].trim() :
-          parts[parts.length - 2].trim();
-        const name = path.indexOf('src/core') >= 0 ? 'core' : lastPathName;
-
-        if (plugins.find(p => p.name === name) !== undefined) {
-          console.warn('WARN: duplicate plugin found ' + name);
-          return;
-        }
-
-        plugins.push({
-          name,
-          path,
-          teamOwner,
-        });
-      } else {
-        const files = fs.readdirSync(dirPrefix + path, { withFileTypes: true });
-        for(let i = 0; i < files.length; i++) {
-          fillBasicTeamPlugins(path + files[i].name, dirPrefix, teamOwner, plugins);
-        }
-      }
-    }
-  } catch (e) {
-    if (inCodeOwnersFile && path.indexOf('*') < 0) { console.warn(path + ' does not exist'); }
-    return plugins;
-  }
+  fillPluginInfo<BasicPluginInfo>(
+    path,
+    dirPrefix,
+    teamOwner,
+    plugins,
+    inCodeOwnersFile,
+    (p: BasicPluginInfo) => p);
  }
 
 export function fillTeamPlugins(
@@ -143,59 +90,25 @@ export function fillTeamPlugins(
   plugins: Array<PluginInfo> = [],
   allApiDocs: Array<PublicAPIDoc>,
   inCodeOwnersFile: boolean = false) {
-
-  if (path.indexOf('src/core') >= 0) {
-    if (plugins.find(p => p.name === 'core')) {
-      return;
-    }
-    path = '/src/core/';
-  } 
-
-  try {
-    const stats = fs.statSync(dirPrefix + path);
-    if (stats.isDirectory()) {
-      const isPlugin = fs.existsSync(dirPrefix + path + '/kibana.json') || path.indexOf('src/core') >= 0;
-      if (isPlugin && !path.includes('plugin_functional') && !path.includes('/test/')) {
-        const parts = path.split('/');
-        const hasReadme = fs.existsSync(dirPrefix + path + '/README.asciidoc') || fs.existsSync(dirPrefix + path + '/README.md');
-        const lastPathName = parts[parts.length - 1].trim() !== '' ?
-          parts[parts.length - 1].trim() :
-          parts[parts.length - 2].trim();
-        const name = path.indexOf('src/core') >= 0 ? 'core' : lastPathName;
-
-        if (plugins.find(p => p.name === name)) {
-          console.warn('WARN: duplicate plugin found ' + name);
-          return;
-        }
-
-        plugins.push({
-          name,
-          path,
-          missingReadme: hasReadme ? 0 : 1, 
-          teamOwner,
-          hasPublicApi: allApiDocs.find(a => a.plugin === name) ? true : false,
-          refCount: allApiDocs.reduce(
-            (sum: number, a) => {
-              return a.plugin === name ? sum + (a.refCount || 0) : sum;
-            }, 0),
-        });
-      } else {
-        const files = fs.readdirSync(dirPrefix + path, { withFileTypes: true });
-        for(let i = 0; i < files.length; i++) {
-          fillTeamPlugins(path + files[i].name, dirPrefix, teamOwner, plugins, allApiDocs);
-        }
-      }
-    }
-  } catch (e) {
-    if (inCodeOwnersFile && path.indexOf('*') < 0) { console.warn(path + ' does not exist'); }
-    return plugins;
-  }
+  fillPluginInfo<PluginInfo>(
+    path,
+    dirPrefix,
+    teamOwner,
+    plugins,
+    inCodeOwnersFile,
+    (p: BasicPluginInfo) => ({
+      ...p, 
+    hasPublicApi: allApiDocs.find(a => a.plugin === name) ? true : false,
+    refCount: allApiDocs.reduce(
+      (sum: number, a) => {
+        return a.plugin === name ? sum + (a.refCount || 0) : sum;
+      }, 0), }));
  }
 
- export function getPluginInfoForPath(
-   path: string,
-   allApiDocs: Array<PublicAPIDoc>): Array<PluginInfo> {
-  return getPluginInfo(fs.readFileSync(`${path}/.github/CODEOWNERS`, { encoding: "utf8" }), path, allApiDocs);
+ export function getPluginInfoForRepo(
+   repoPath: string,
+   allApiDocs?: Array<PublicAPIDoc>): Array<PluginInfo> {
+  return extractPluginsFromCodeOwners(getCodeOwnersFile(repoPath), repoPath, allApiDocs);
 }
 
 export function getCodeOwnersFile(path: string) {
@@ -209,4 +122,79 @@ export async function indexPluginInfo(
     commitDate: string) {
   indexDocs(client, plugins, commitHash, commitDate, 'kibana-plugins-latest', (p) => p.name);
   indexDocs(client, plugins, commitHash, commitDate, 'kibana-plugins', (p) => `${p.name}${commitHash}`);
+}
+
+
+export function fillPluginInfo<T extends BasicPluginInfo>(
+  path: string,
+  dirPrefix: string,
+  teamOwner: string,
+  plugins: Array<T> = [],
+  inCodeOwnersFile: boolean = false,
+  getPluginInfo: (info: BasicPluginInfo) => T) {
+
+  if (path.indexOf('src/core') >= 0) {
+    if (plugins.find(p => p.name === 'core')) {
+      return;
+    }
+    path = '/src/core/';
+  } 
+
+  try {
+    const stats = fs.statSync(dirPrefix + path);
+    if (stats.isDirectory()) {
+      const isPlugin = fs.existsSync(dirPrefix + path + '/kibana.json') || path.indexOf('src/core') >= 0;
+      if (isPlugin && !path.includes('plugin_functional') && !path.includes('/test/')) {
+        const hasReadme = readmeExists(dirPrefix + path + '/README.asciidoc');
+        const name = getPluginNameFromPath(path)
+
+        // There can be multiple lines in code owners that maps to the same plugin. Skip dups.
+        if (plugins.find(p => p.name === name)) {
+          return;
+        }
+
+        plugins.push(getPluginInfo({ name, path, missingReadme: hasReadme ? 0 : 1, teamOwner }));
+      } else {
+        const files = fs.readdirSync(dirPrefix + path, { withFileTypes: true });
+        for(let i = 0; i < files.length; i++) {
+          const filePath = path.endsWith('/') ? `${path}${files[i].name}` : `${path}/${files[i].name}`;
+          fillPluginInfo(filePath, dirPrefix, teamOwner, plugins, inCodeOwnersFile, getPluginInfo);
+        }
+      }
+    }
+  } catch (e) {
+    if (inCodeOwnersFile && path.indexOf('*') < 0) { console.warn(path + ' does not exist'); }
+    return plugins;
+  }
+}
+
+export function readmeExists(pluginPath: string) {
+ return fs.existsSync(pluginPath + '/README.asciidoc') || fs.existsSync(pluginPath + '/README.md');
+}
+
+export function getPluginNameFromPath(path: string) {
+  const parts = path.split('/');
+  const lastPathName = parts[parts.length - 1].trim() !== '' ?
+    parts[parts.length - 1].trim() :
+    parts[parts.length - 2].trim();
+  return path.indexOf('src/core') >= 0 ? 'core' : lastPathName;
+}
+
+/**
+ * 
+ * @param path
+ */
+export function getPluginForNestedPath(path: string) {
+  const parts = path.split('/');
+
+  while (parts.length > 0) {
+    const pluginPath = parts.join('/');
+    if (fs.existsSync(pluginPath + '/kibana.json')) {
+      return pluginPath;
+    } else {
+      parts.pop();
+    }
+  }
+
+  return undefined;
 }

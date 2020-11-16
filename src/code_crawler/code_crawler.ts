@@ -7,7 +7,7 @@ import path from 'path';
 import find from 'find';
 import sloc from 'sloc';
 import tmp from 'tmp';
-import { BasicPluginInfo, getBasicPluginInfo, getCodeOwnersFile, getTeamOwner, PluginInfo } from "../plugin_utils";
+import { BasicPluginInfo, getPluginInfoForRepo, getCodeOwnersFile, getTeamOwner, PluginInfo } from "../plugin_utils";
 import { getIndexName, indexDocs } from "../es_utils";
 import { repo, checkoutDates } from './config';
 import { checkoutRepo, getCommitDate, getCommitHash } from "../git_utils";
@@ -172,9 +172,7 @@ export async function crawlCode() {
       //   continue;
       // }
 
-
-      const codeOwnersFile = getCodeOwnersFile(repoPath);
-      const plugins = getBasicPluginInfo(codeOwnersFile, repoPath)
+      const plugins = getPluginInfoForRepo(repoPath)
 
       let files: Array<FileDocAttributes | undefined> = [];
       

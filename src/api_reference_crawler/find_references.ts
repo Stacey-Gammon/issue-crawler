@@ -31,7 +31,6 @@ export function findPluginAPIUsages(
   source.getClasses().forEach(c => {
     c.getMethods().forEach(m => {
       const lifecycleFn = m.getName();
-      const identifer = `${sourcePlugin.name}.${sourceInfo.publicOrServer}.${lifecycleFn}`;
       if (lifecycleFn === 'setup' || lifecycleFn === 'start') {
         const ret = m.getReturnTypeNode();
         if (ret) {

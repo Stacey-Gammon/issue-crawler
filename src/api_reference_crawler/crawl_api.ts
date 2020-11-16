@@ -2,10 +2,10 @@
 import  elasticsearch from 'elasticsearch';
 import  { elasticsearchEnv } from '../config';
 
-import { getPluginInfoForPath, indexPluginInfo, PluginInfo } from "../plugin_utils";
+import { getPluginInfoForRepo, indexPluginInfo, PluginInfo } from "../plugin_utils";
 import { PublicAPIDoc, ReferenceDoc } from "./service";
 import { collectApiInfo } from './build_api_docs';
-import { getIndexName, indexDocs } from "../es_utils";
+import { createIndex, getIndexName, indexDocs } from "../es_utils";
 import { checkoutDates, repo } from "./config";
 import { checkoutRepo, getCommitDate, getCommitHash } from "../git_utils";
 
@@ -24,8 +24,24 @@ function getApiDocId(commitHash: string, doc: PublicAPIDoc) {
   return `${commitHash}${doc.plugin}${doc.name}`
 }
 
+const refDocIndexProperties: Object = {
+  'reference.file': { type: 'keyword' },
+  'reference.team': { type: 'keyword' },
+  'reference.plugin': { type: 'keyword' },
+  'source.id': { type: 'keyword' },
+  'source.file': { type: 'keyword' },
+  'source.plugin': { type: 'keyword' },
+  'source.team': { type: 'keyword' },
+  'source.name': { type: 'keyword' },
+  'source.lifeCycle': { type: 'keyword' },
+  'source.isStatic': { type: 'boolean' }
+};
+
 export async function crawlServices() {
   const { repoPath, currentGit } = await checkoutRepo(repo, '/Users/gammon/Elastic/kibana');
+
+  await createIndex(client, refsIndexName, refDocIndexProperties);
+  await createIndex(client, `${refsIndexName}-latest`, refDocIndexProperties);
 
   try {
     for (const date of checkoutDates) {
@@ -46,7 +62,7 @@ export async function crawlServices() {
         await indexDocs<PublicAPIDoc>(client, apiDocs, commitHash, commitDate, apiIndexName + '-latest', (doc: PublicAPIDoc) => getApiDocId('', doc));
       }
 
-      const plugins: Array<PluginInfo> = getPluginInfoForPath(repoPath, apiDocs);
+      const plugins: Array<PluginInfo> = getPluginInfoForRepo(repoPath, apiDocs);
       await indexPluginInfo(client, plugins, commitHash, commitDate);
 
     }
