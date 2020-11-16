@@ -38,7 +38,7 @@ const refDocIndexProperties: Object = {
 };
 
 export async function crawlServices() {
-  const { repoPath, currentGit } = await checkoutRepo(repo, '/Users/gammon/Elastic/kibana');
+  const { repoPath, currentGit } = await checkoutRepo(repo);
 
   await createIndex(client, refsIndexName, refDocIndexProperties);
   await createIndex(client, `${refsIndexName}-latest`, refDocIndexProperties);
