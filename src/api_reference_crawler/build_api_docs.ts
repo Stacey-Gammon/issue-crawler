@@ -34,6 +34,9 @@ function collectApiInfoForConfig(repoPath: string, tsConfigFilePath: string) {
   allApiDocs.push(...staticApiInfo.apiDocs);
   allRefDocs.push(...staticApiInfo.refDocs);
 
+  const staticApiCount = staticApiInfo.refDocs.length;
+  console.log(`Index files expose ${staticApiCount} references`);
+
   // Extracting dynamic api usage
   const pluginFiles = sourceFiles.filter((v, i) => (
     v.getFilePath().indexOf('public/plugin.ts') >= 0 ||
@@ -48,6 +51,8 @@ function collectApiInfoForConfig(repoPath: string, tsConfigFilePath: string) {
   allApiDocs.push(...apiDocs);
   allRefDocs.push(...refDocs);
 
+  console.log(`Plugin files expose ${refDocs.length} references`);
+
   return { apiDocs: allApiDocs, refDocs: allRefDocs };
 }
 
@@ -60,8 +65,6 @@ function collectApiInfoForFiles(
   const allApiDocs: Array<PublicAPIDoc> = [];
 
   files.forEach(source => {
-    console.log(`Collecting API info for file ${source.getFilePath()}`);
-
     let plugin = getPluginForPath(source.getFilePath(), pluginInfo);
 
     if (!plugin) {
