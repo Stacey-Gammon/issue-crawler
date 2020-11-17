@@ -1,12 +1,9 @@
-import { checkIsBareRepoTask } from "simple-git/src/lib/tasks/check-is-repo";
-
 
 import { Client } from 'elasticsearch';
 
 export async function alreadyIndexed(client: Client, repo: string, indexName: string, commitHash: string) {
   const entries = await client.search({
     index: indexName,
-    ignoreUnavailable: true,
     size: 0,
     body: {
       query: {
@@ -34,31 +31,48 @@ export function getIndexName(prefix: string, repo: string) {
 
 
 export async function indexDocs<Doc>(client: Client, docs: Array<Doc>, commitHash: string, commitDate: string, indexName: string, getId?: (d: Doc) => string) {
-  console.log(`Indexing data from ${docs.length} docs`);
- // console.table(docs);
-  let body: any[] = [];
-  docs.forEach(doc => {
-    if (doc) {
-      body.push({ index: { 
-        _index: indexName,
-        _type: "_doc",
-        ...(getId ?  { _id: getId(doc) } : {}), 
-      } });
-      body.push({ ...doc, commitHash, commitDate });
+  if (docs.length === 0) return;
+  const batchSize = 500;
+  let group = 0;
+  while (group * batchSize < docs.length) {
+    let body: any[] = [];
+    const batchSizeMax = (group + 1) * batchSize;
+    const index = group * batchSize;
+    for (let i = index; i < docs.length && i < batchSizeMax; i++) {
+      if (docs[i]) {
+        body.push({ index: { 
+          _index: indexName,
+          _type: "_doc",
+          ...(getId ?  { _id: getId(docs[i]) } : {}), 
+        } });
+        body.push({ ...docs[i], commitHash, commitDate });
+      } else {
+        console.error('undefined doc!');
+      }
     }
-  });
-  try {
-    await client.bulk({
-      body
-    });
-  } catch (e) {
-    console.error(e);
+    try {
+      console.log(`${group} Indexing ${body.length/2}/${docs.length} docs into ${indexName}...`);
+      const response = await client.bulk({
+        body
+      });
+      // console.log(JSON.stringify(response));
+      // console.log('response', response);
+      if (response.errors) {
+        console.log(`Encountered errors:`);
+        console.log(JSON.stringify(response));
+      } else {
+        console.log(`${group} Successfully indexed ${body.length/2}/${docs.length} docs into ${indexName}.`);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    group++;
   }
 }
 
 export async function createIndex(client: Client, repo: string, properties: Object) {
   try {
-    await client.indices.create({ method: 'PUT',
+   await client.indices.create({ method: 'PUT',
       index: repo,
       body: {
         mappings: {

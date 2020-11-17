@@ -8,14 +8,15 @@
     "build": "rimraf build && tsc",
     "crawlRefs": "rimraf build && tsc && node build/api_reference_crawler/run.js",
     "crawlCode": "rimraf build && tsc && node build/code_crawler/run.js",
-    "crawlIssues": "rimraf build && tsc && node build/issue_crawler.js"
+    "crawlIssues": "rimraf build && tsc && node build/issue_crawler/run.js"
   },
   "author": "Tim Roes <mail@timroes.de>",
   "license": "Apache-2.0",
   "dependencies": {
     "@octokit/plugin-retry": "^3.0.1",
     "@octokit/rest": "^18.0.6",
-    "elasticsearch": "^16.6.0",
+    "@types/elasticsearch": "^5.0.36",
+    "elasticsearch": "^16.7.1",
     "find": "^0.3.0",
     "moment": "^2.24.0",
     "simple-git": "^2.21.0",
@@ -24,7 +25,6 @@
   },
   "devDependencies": {
     "@octokit/types": "^5.5.0",
-    "@types/elasticsearch": "^5.0.36",
     "@types/find": "^0.2.1",
     "@types/jest": "^26.0.14",
     "@types/sloc": "^0.2.0",

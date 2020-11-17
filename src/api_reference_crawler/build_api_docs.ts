@@ -1,24 +1,30 @@
 import { PublicAPIDoc, ReferenceDoc } from "./service";
-
+import  elasticsearch from 'elasticsearch';
 
 import { Project, SourceFile } from "ts-morph";
 import { BasicPluginInfo, getPluginForNestedPath, getPluginForPath, getPluginInfoForRepo, getPluginNameFromPath, readmeExists } from "../plugin_utils";
-import { findPluginAPIUsages } from "./find_references";
 import { findStaticExportReferences } from "./find_static_references";
+import { getIndexName, indexDocs } from "../es_utils";
+import { repo } from "./config";
+import { findPluginAPIUsages } from "./find_references";
 
-export function collectApiInfo(path: string): { refDocs: Array<ReferenceDoc>, apiDocs: Array<PublicAPIDoc> } {
-  // This tsconfig will capture both oss and x-pack code, while the top tsconfig will not capture x-pack.
-  return collectApiInfoForConfig(path, `${path}/x-pack/tsconfig.json`);
-}
+// export function collectApiInfo(path: string): { refDocs: Array<ReferenceDoc>, apiDocs: Array<PublicAPIDoc> } {
+//   // This tsconfig will capture both oss and x-pack code, while the top tsconfig will not capture x-pack.
+//   return collectApiInfoForConfig(path, `${path}/x-pack/tsconfig.json`);
+// }
 
-function collectApiInfoForConfig(repoPath: string, tsConfigFilePath: string) {
+export async function collectApiInfoForConfig(
+  client: elasticsearch.Client,
+  repoPath: string,
+  tsConfigFilePath: string,
+  commitHash: string,
+  commitDate: string,
+  indexAsLatest: boolean) {
   const project = new Project({ tsConfigFilePath });
-
   const basicPluginInfo = getPluginInfoForRepo(repoPath);
 
   const sourceFiles = project.getSourceFiles();
-  const allRefDocs: Array<ReferenceDoc> = [];
-  const allApiDocs: Array<PublicAPIDoc> = [];
+  const allApiDocs: { [key: string]: PublicAPIDoc } = {};
 
   // Extracting static export usage
   const staticFiles = sourceFiles.filter((v, i) => (
@@ -27,14 +33,16 @@ function collectApiInfoForConfig(repoPath: string, tsConfigFilePath: string) {
 
   console.log(`${staticFiles.length} index files found for tsconfig ${tsConfigFilePath}`);
 
-  const staticApiInfo = collectApiInfoForFiles(
+  await collectApiInfoForFiles(
+    client,
+    commitHash,
+    commitDate,
+    indexAsLatest,
     staticFiles,
     basicPluginInfo, 
-    (source, plugin) => findStaticExportReferences(source, plugin, basicPluginInfo));
-  allApiDocs.push(...staticApiInfo.apiDocs);
-  allRefDocs.push(...staticApiInfo.refDocs);
+    (source, plugin) => findStaticExportReferences(source, plugin, basicPluginInfo, allApiDocs));
 
-  const staticApiCount = staticApiInfo.refDocs.length;
+  const staticApiCount = Object.values(allApiDocs).reduce((acc, d) => (d.refCount ? d.refCount : 0) + acc, 0);
   console.log(`Index files expose ${staticApiCount} references`);
 
   // Extracting dynamic api usage
@@ -44,27 +52,34 @@ function collectApiInfoForConfig(repoPath: string, tsConfigFilePath: string) {
 
   console.log(`${pluginFiles.length} plugin files found for tsconfig ${tsConfigFilePath}`);
 
-  const { refDocs, apiDocs } = collectApiInfoForFiles(
+  collectApiInfoForFiles(
+    client,
+    commitHash,
+    commitDate,
+    indexAsLatest,
     pluginFiles,
     basicPluginInfo, 
-    (source, plugin) => findPluginAPIUsages(project, source, plugin, basicPluginInfo));
-  allApiDocs.push(...apiDocs);
-  allRefDocs.push(...refDocs);
+    (source, plugin) => findPluginAPIUsages(project, source, plugin, basicPluginInfo, allApiDocs));
 
-  console.log(`Plugin files expose ${refDocs.length} references`);
+  const allApiCnt = Object.values(allApiDocs).reduce((acc, d) => (d.refCount ? d.refCount : 0) + acc, 0);
+  console.log(`Plugin files expose ${allApiCnt - staticApiCount} references`);
 
-  return { apiDocs: allApiDocs, refDocs: allRefDocs };
+  return allApiDocs;
 }
 
-function collectApiInfoForFiles(
+async function collectApiInfoForFiles(
+  client: elasticsearch.Client,
+  commitHash: string,
+  commitDate: string,
+  indexAsLatest: boolean,
   files: Array<SourceFile>,
   pluginInfo: Array<BasicPluginInfo>,
-  getInfo: (sourceFile: SourceFile, plugin: BasicPluginInfo) => { apiDocs: Array<PublicAPIDoc>, refDocs: Array<ReferenceDoc> })
-  : { apiDocs: Array<PublicAPIDoc>, refDocs: Array<ReferenceDoc> } {
-  const allRefDocs: Array<ReferenceDoc> = [];
-  const allApiDocs: Array<PublicAPIDoc> = [];
+  getInfo: (sourceFile: SourceFile, plugin: BasicPluginInfo, apiDocs: { [key: string]: PublicAPIDoc }) => { [key: string]: ReferenceDoc })
+  : Promise<{ [key: string]: PublicAPIDoc }>  {
+  const apiDocs: { [key: string]: PublicAPIDoc } = {};
 
-  files.forEach(source => {
+  console.log(`Collecting API references from ${files.length} files`);
+  for (const source of files) {
     let plugin = getPluginForPath(source.getFilePath(), pluginInfo);
 
     if (!plugin) {
@@ -72,7 +87,7 @@ function collectApiInfoForFiles(
 
       if (!path) {
         console.log(`WARN: No plugin path for file ${source.getFilePath()}`);
-        return;
+        continue;
       }
   
       plugin = {
@@ -85,10 +100,45 @@ function collectApiInfoForFiles(
       pluginInfo.push(plugin);
     }
 
-    const { apiDocs, refDocs } = getInfo(source, plugin);
-    allApiDocs.push(...apiDocs);
-    allRefDocs.push(...refDocs);
-  });
+    const refDocs = getInfo(source, plugin, apiDocs);
+    const refs= Object.values(refDocs);
+    console.log(`Collected ${refs.length} reference docs for plugin ${plugin.name} and file ${source.getFilePath()}`);
 
-  return { apiDocs: allApiDocs, refDocs: allRefDocs };
+    if (refs.length > 0) {
+      await indexRefDocs(client, commitHash, commitDate, refs, indexAsLatest);
+    }
+  };
+
+  return apiDocs;
+}
+
+function getRefDocId(commitHash: string, doc: ReferenceDoc) {
+  return `
+    ${commitHash}${doc.source.plugin}${doc.source.file.path.replace('/', '')}${doc.source.name}.${doc.reference.file.path.replace('/', '')}
+  `
+}
+
+export async function indexRefDocs(
+    client: elasticsearch.Client,
+    commitHash: string,
+    commitDate: string,
+    refDocs: Array<ReferenceDoc>,
+    indexAsLatest: boolean) {
+  const refsIndexName = getIndexName('references', repo);
+  await indexDocs<ReferenceDoc>(
+    client,
+    refDocs,
+    commitHash,
+    commitDate,
+    refsIndexName,
+    (doc: ReferenceDoc) => getRefDocId(commitHash, doc));
+  if (indexAsLatest) {
+    await indexDocs<ReferenceDoc>(
+      client,
+      refDocs,
+      commitHash,
+      commitDate,
+      refsIndexName + '-latest',
+      (doc: ReferenceDoc) => getRefDocId('', doc));
+  }
 }
