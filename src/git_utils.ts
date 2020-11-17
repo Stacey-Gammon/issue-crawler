@@ -12,7 +12,7 @@ export interface GitInfo {
 
 export async function checkoutRepo(repo: string, dir?: string):
   Promise<{ repoPath: string, currentGit: SimpleGit }> {
-  const tmpDir = dir ? { name: dir } : tmp.dirSync();
+  const tmpDir = dir && dir != '' ? { name: dir } : tmp.dirSync();
  
   console.log(`Processing ${repo}, using ${tmpDir.name}`);
  
