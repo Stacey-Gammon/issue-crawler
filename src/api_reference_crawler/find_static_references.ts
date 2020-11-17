@@ -10,10 +10,13 @@ import { PublicAPIDoc, ReferenceDoc } from "./service";
 import { SourceInfo, getPublicOrServer } from './find_references';
 import { addExportReferences } from "./add_export_references";
 
-export function findStaticExportReferences(source: SourceFile, sourcePlugin: BasicPluginInfo, plugins: Array<BasicPluginInfo>): 
-  { refDocs: Array<ReferenceDoc>, apiDocs: Array<PublicAPIDoc> } {
-  const refs: Array<ReferenceDoc> = [];
-  const apiDocs: Array<PublicAPIDoc> = [];
+export function findStaticExportReferences(
+    source: SourceFile,
+    sourcePlugin: BasicPluginInfo,
+    plugins: Array<BasicPluginInfo>,
+    apiDocs: { [key: string]: PublicAPIDoc }): 
+  { [key:string]: ReferenceDoc } {
+  const refDocs: { [key: string]: ReferenceDoc } = {};
 
   const sourceInfo: SourceInfo = {
     sourcePlugin,
@@ -24,7 +27,7 @@ export function findStaticExportReferences(source: SourceFile, sourcePlugin: Bas
   const exported = source.getExportedDeclarations();
   exported.forEach((val) => {
     val.forEach(ed => {
-      const preRefCnt = refs.length; 
+      const preRefCnt = Object.values(refDocs).length; 
       let name: string | undefined = '';
 
       if ((ed as FunctionDeclaration).getName && (
@@ -33,24 +36,14 @@ export function findStaticExportReferences(source: SourceFile, sourcePlugin: Bas
         return;
       }
 
-      if (ed.getKind() === SyntaxKind.FunctionDeclaration) {
-        name = (ed as FunctionDeclaration).getName();
-        refs.push(...extractStaticReferencesToEntity(ed as FunctionDeclaration, sourceInfo, plugins));
-      } else if (ed.getKind() === SyntaxKind.ClassDeclaration) {
-        name = (ed as ClassDeclaration).getName();
-        refs.push(...extractStaticReferencesToEntity(ed as ClassDeclaration, sourceInfo, plugins));
-      } else if (ed.getKind() === SyntaxKind.EnumDeclaration) {
-        name = (ed as EnumDeclaration).getName();
-        refs.push(...extractStaticReferencesToEntity(ed as EnumDeclaration, sourceInfo, plugins));
-      } else if (ed.getKind() === SyntaxKind.VariableDeclaration) {
-        name = (ed as VariableDeclaration).getName();
-        refs.push(...extractStaticReferencesToEntity(ed as VariableDeclaration, sourceInfo, plugins));
-      } else if (ed.getKind() === SyntaxKind.InterfaceDeclaration) {
-        name = (ed as InterfaceDeclaration).getName();
-        refs.push(...extractStaticReferencesToEntity(ed as InterfaceDeclaration, sourceInfo, plugins));
-      } else if (ed.getKind() === SyntaxKind.TypeAliasDeclaration) {
+      if (ed.getKind() === SyntaxKind.FunctionDeclaration ||
+          ed.getKind() === SyntaxKind.ClassDeclaration ||
+          ed.getKind() === SyntaxKind.EnumDeclaration ||
+          ed.getKind() === SyntaxKind.VariableDeclaration ||
+          ed.getKind() === SyntaxKind.InterfaceDeclaration ||
+          ed.getKind() === SyntaxKind.TypeAliasDeclaration) {
         name = (ed as TypeAliasDeclaration).getName();
-        refs.push(...extractStaticReferencesToEntity(ed as TypeAliasDeclaration, sourceInfo, plugins));
+        extractStaticReferencesToEntity(ed as TypeAliasDeclaration, sourceInfo, plugins, refDocs);
       } else if (ed.getKind() === SyntaxKind.Identifier) {
         const ident = ed as Identifier;
         ident.getImplementations().forEach(imp => imp.getNode())
@@ -62,15 +55,16 @@ export function findStaticExportReferences(source: SourceFile, sourcePlugin: Bas
         const file = ed as SourceFile;
         extractSourceFileReferences(file, sourceInfo, plugins);
         console.warn(`WARN: ${sourcePlugin.name}.${sourceInfo.publicOrServer} is exporting a SourceFile. Is this intentional?`);
-        apiDocs.push({
+        const id = `${sourceInfo.sourcePlugin.name}.${sourceInfo.publicOrServer}.${name}`;
+        apiDocs[id] = {
           plugin: sourceInfo.sourcePlugin.name,
           file: { path: sourceInfo.sourceFile },
           name: file.getFilePath(),
           team: sourceInfo.sourcePlugin.teamOwner,
           type: ed.getKindName(),
           isStatic: true,
-          id: `${sourceInfo.sourcePlugin.name}.${sourceInfo.publicOrServer}.${name}`,
-        });
+          id,
+        };
         return;
       } else {
         if (ed.getText().trim() !== '{}') {
@@ -85,8 +79,9 @@ export function findStaticExportReferences(source: SourceFile, sourcePlugin: Bas
         return;
       }
 
-      const refCnt = refs.length - preRefCnt;
-      apiDocs.push({
+      const refCnt = Object.values(refDocs).length - preRefCnt;
+      const id = `${sourceInfo.sourcePlugin.name}.${sourceInfo.publicOrServer}.${name}`;
+      apiDocs[id] = {
         plugin: sourceInfo.sourcePlugin.name,
         file: { path: sourceInfo.sourceFile },
         name,
@@ -94,21 +89,20 @@ export function findStaticExportReferences(source: SourceFile, sourcePlugin: Bas
         refCount: refCnt,
         type: ed.getKindName(),
         isStatic: true,
-        id: `${sourceInfo.sourcePlugin.name}.${sourceInfo.publicOrServer}.${name}`,
-      });
+        id
+      };
     });
   });
 
-  return { refDocs: refs, apiDocs };
+  return refDocs;
 }
 
 
 export function extractStaticReferencesToEntity(
   entity: FunctionDeclaration | ClassDeclaration | VariableDeclaration | EnumDeclaration | MethodDeclaration | ParameterDeclaration | InterfaceDeclaration | TypeAliasDeclaration,
   sourceInfo: SourceInfo,
-  plugins: Array<BasicPluginInfo>): Array<ReferenceDoc> {
-  const refs: Array<ReferenceDoc> = [];
-
+  plugins: Array<BasicPluginInfo>,
+  refs: { [key: string]: ReferenceDoc }) {
   const identifier = `${sourceInfo.sourcePlugin.name}.${sourceInfo.publicOrServer}.${entity.getName()}`;
 
   const name = entity.getName();
@@ -116,9 +110,7 @@ export function extractStaticReferencesToEntity(
     console.error(`${identifier} is missing entity name. Text is ${entity.getText(true)}`);
     return [];
   }
-  console.log('Getting references for api ' + identifier);
   addExportReferences(entity.findReferences(), entity.getName()!, sourceInfo, plugins, refs, true);
-  return refs;
 }
 
 function extractSourceFileReferences(

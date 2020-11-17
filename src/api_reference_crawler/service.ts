@@ -7,11 +7,13 @@ export interface ReferenceDoc {
     team: string;
     lifecycle?: string;
     isStatic?: boolean;
+    xpack: boolean;
   }
   reference: {
     plugin: string;
     file: { path: string };
     team: string;
+    xpack: boolean;
   }
 }
 
