@@ -14,14 +14,13 @@ export function getPublicOrServer(path: string) {
   return path.indexOf('/public/') >= 0 ? 'public' : 'server';
 }
 
-
 export function findPluginAPIUsages(
     project: Project,
     source: SourceFile,
     sourcePlugin: BasicPluginInfo,
-    plugins: Array<BasicPluginInfo>): { refDocs: Array<ReferenceDoc>, apiDocs: Array<PublicAPIDoc> } {
-  const refs: Array<ReferenceDoc> = [];
-  const apiDocs: Array<PublicAPIDoc> = [];
+    plugins: Array<BasicPluginInfo>,
+    apiDocs: { [key: string]: PublicAPIDoc }):  {[key:string]: ReferenceDoc } {
+  const refDocs: { [key:string]: ReferenceDoc } = {};
   const sourceInfo: SourceInfo = {
     sourcePlugin,
     publicOrServer: getPublicOrServer(source.getFilePath()),
@@ -39,10 +38,9 @@ export function findPluginAPIUsages(
             if (decNode) {
               // Promise has to be handled a bit differently.
               if (Node.isInterfaceDeclaration(decNode) && decNode.getName() === 'Promise') {
-                apiDocs.push(
-                  ...addRefsForPromiseType(ret.getType().getTypeArguments(), sourceInfo, plugins, refs, m.getName()));
+                addRefsForPromiseType(ret.getType().getTypeArguments(), sourceInfo, plugins, refDocs, m.getName(), apiDocs);
               } else {
-                apiDocs.push(...addPropertyRefsFromNode(decNode, sourceInfo, plugins, refs, m.getName()));
+                addPropertyRefsFromNode(decNode, sourceInfo, plugins, refDocs, m.getName(), apiDocs);
               }
             }
           });
@@ -50,43 +48,41 @@ export function findPluginAPIUsages(
           const typeText = m.getReturnType().getText().trim();
           const symbolName = m.getReturnType().getSymbol()?.getName();
           if (symbolName && symbolName === 'Promise') {
-            apiDocs.push(
-              ...addRefsForPromiseType(m.getReturnType().getTypeArguments(), sourceInfo, plugins, refs, lifecycleFn));
+            addRefsForPromiseType(m.getReturnType().getTypeArguments(), sourceInfo, plugins, refDocs, lifecycleFn, apiDocs);
             return;
           }
           if (typeText !== '{}' &&
               typeText !== 'Promise<void>' &&
               typeText !== 'Promise<{}>' &&
               typeText !== 'void') {
-            apiDocs.push(...addRefsForImplicitReturnType(m.getReturnType(), sourceInfo, plugins, refs, lifecycleFn));
+            addRefsForImplicitReturnType(m.getReturnType(), sourceInfo, plugins, refDocs, lifecycleFn, apiDocs);
           }
         }
       }
     });
-  })
-  return { refDocs: refs, apiDocs };
+  });
+  return refDocs;
 }
 
 function addRefsForPromiseType(
   typeArgs: Type[],
   sourceInfo: SourceInfo,
   plugins: Array<BasicPluginInfo>,
-  refs: Array<ReferenceDoc>,
-  lifeCycle: string): Array<PublicAPIDoc> {
-  const apiDocs: Array<PublicAPIDoc> = [];
+  refs: { [key: string]: ReferenceDoc },
+  lifeCycle: string,
+  apiDocs: { [key: string]: PublicAPIDoc }) {
   typeArgs.forEach(tp => {
-    apiDocs.push(...addRefsForImplicitReturnType(tp, sourceInfo, plugins, refs, lifeCycle));
+    addRefsForImplicitReturnType(tp, sourceInfo, plugins, refs, lifeCycle, apiDocs);
   });
-  return apiDocs;
 }
 
 function addRefsForImplicitReturnType(
     ret: Type,
     sourceInfo: SourceInfo,
     plugins: Array<BasicPluginInfo>,
-    refs: Array<ReferenceDoc>,
-    lifeCycle: string): Array<PublicAPIDoc> {
-  const apiDocs: Array<PublicAPIDoc> = [];
+    refs: { [key: string]: ReferenceDoc },
+    lifeCycle: string, 
+    apiDocs: { [key: string]: PublicAPIDoc }) {
   try {
     ret.getProperties().forEach(p => {
       p.getDeclarations().forEach(d => {
@@ -104,7 +100,12 @@ function addRefsForImplicitReturnType(
             return;
           }
           const refCnt = addExportReferences(pa.findReferences(), pa.getName(), sourceInfo, plugins, refs, false, lifeCycle);
-          apiDocs.push({
+          const id = `${sourceInfo.sourcePlugin.name}.${sourceInfo.publicOrServer}.${lifeCycle}.${pa.getName()}`;
+          if (apiDocs[id]) {
+            console.warn(`addRefsForImplicitReturnType) Duplicate entry for api doc ${id} with ref Count of ${apiDocs[id].refCount} and new ref count ${refCnt}`);
+          }
+          console.log(`addRefsForImplicitReturnType) ${id} to ${refCnt}`);
+          apiDocs[id] = {
             plugin: sourceInfo.sourcePlugin.name,
             file: { path: sourceInfo.sourceFile },
             name: pa.getName(),
@@ -113,7 +114,7 @@ function addRefsForImplicitReturnType(
             type: d.getKindName(),
             isStatic: false,
             id: `${sourceInfo.sourcePlugin.name}.${sourceInfo.publicOrServer}.${lifeCycle}.${pa.getName()}`,
-          });
+          };
         } else {
         console.log(`p name: ${p.getName()} declaration of kind ${d.getKindName()}`, d.getText());
         }
@@ -122,16 +123,15 @@ function addRefsForImplicitReturnType(
   } catch (e) {
     console.error('\nERROR\n', e);
   }
-
-  return apiDocs;
 }
 
 function addPropertyRefsFromNode(
     node: Node,
     sourceInfo: SourceInfo,
     plugins: Array<BasicPluginInfo>,
-    refs: Array<ReferenceDoc>,
-    lifeCycle: string): Array<PublicAPIDoc> {
+    refs: { [key: string]: ReferenceDoc },
+    lifeCycle: string,
+    apiDocs: { [key: string]: PublicAPIDoc }) {
   const identifer = `${sourceInfo.sourcePlugin.name}.${sourceInfo.publicOrServer}.${lifeCycle}`;  
 
   if (Node.isInterfaceDeclaration(node)) {
@@ -144,10 +144,14 @@ function addPropertyRefsFromNode(
       return [];
     }
 
-    const apiDocs: Array<PublicAPIDoc> = [];
     node.getProperties().forEach(m => {
       const refCnt = addExportReferences(m.findReferences(), m.getName(), sourceInfo, plugins, refs, false, lifeCycle);
-      apiDocs.push({
+      const id = `${identifer}.${m.getName()}`;
+      if (apiDocs[id]) {
+        console.warn(`addPropertyRefsFromNode) Duplicate entry for api doc ${id} with ref Count of ${apiDocs[id].refCount} and new ref count ${refCnt}`);
+      }
+      console.log(`addPropertyRefsFromNode) ${id} to ${refCnt}`);
+      apiDocs[id] = {
         plugin: sourceInfo.sourcePlugin.name,
         file: { path: sourceInfo.sourceFile },
         name: m.getName(),
@@ -155,10 +159,9 @@ function addPropertyRefsFromNode(
         refCount: refCnt,
         type: m.getKindName(),
         isStatic: false,
-        id: `${identifer}.${m.getName()}`,
-      });
+        id,
+      };
     });
-    return apiDocs;
   } 
 
   return [];
