@@ -1,12 +1,11 @@
 import { Octokit } from '@octokit/rest';
 import { retry } from '@octokit/plugin-retry';
-import  elasticsearch, { BulkIndexDocumentsParams, SearchResponse } from 'elasticsearch';
+import  elasticsearch, { BulkIndexDocumentsParams, Client, SearchResponse } from 'elasticsearch';
 
 import  { elasticsearchEnv, githubAuth, repos, privateRepos } from './config';
 
-
-import { getProjects, ProjectInfo } from './projects';
-import { convertIssue, KibanaIssue } from './issues';
+import { getProjects, ProjectInfo } from '../projects';
+import { convertIssue, KibanaIssue } from '../issues';
 import { IssuesListForRepoResponseData, OctokitResponse } from '@octokit/types';
 
 const CACHE_INDEX = 'cache';
@@ -34,7 +33,7 @@ type CacheEntry = {
  */
 function getIssueBulkUpdates(
 		index: string,
-		issues: Array<KibanaIssue>): BulkIndexDocumentsParams['body'] {
+		issues: Array<KibanaIssue>) {
 	console.log('getIssueBulkUpdates for ' + issues.length + ' issues');
 	const ret: BulkIndexDocumentsParams['body'] = [];
 	return ret.concat(...issues.map(issue => [
@@ -115,7 +114,7 @@ async function processGitHubIssues(
 	}
 }
 
-async function getEntries(owner: string, repo: string): Promise<SearchResponse<CacheEntry> | undefined> {
+async function getEntries(owner: string, repo: string): Promise<SearchResponse<CacheEntry>  | undefined> {
 	try {
 		return await client.search({
 			index: CACHE_INDEX,
@@ -181,7 +180,7 @@ async function loadCacheForRepo(owner: string, repo: string): Promise<Record<num
 	}
 
 	const cacheMapping: Record<string, string | undefined>  = {};
-	return entries.hits.hits.reduce((cache, entry) => {
+	return entries.hits.hits.reduce((cache, entry: any) => {
 		cache[entry._source.page] = entry._source.key;
 		return cache;
 	}, cacheMapping);

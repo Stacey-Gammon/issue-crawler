@@ -1,7 +1,7 @@
 
 import git from "simple-git/promise";
 import  elasticsearch from 'elasticsearch';
-import  { elasticsearchEnv, codeRepos } from '../config';
+import  { elasticsearchEnv, codeRepos } from '../issue_crawler/config';
 import fs from 'fs';
 import path from 'path';
 import find from 'find';
@@ -156,7 +156,7 @@ async function indexFiles(files:  Array<FileDocAttributes | undefined>, repo: st
 }
 
 export async function crawlCode() {
-  const { repoPath, currentGit } = await checkoutRepo(repo, '/Users/gammon/Elastic/kibana');
+  const { repoPath, currentGit } = await checkoutRepo(repo, process.env.LOCAL_REPO_DIR);
   try {
     for (const date of checkoutDates) {
       const checkout = date ? `master@${date}` : 'master';
