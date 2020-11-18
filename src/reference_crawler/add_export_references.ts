@@ -1,8 +1,8 @@
 import { ReferencedSymbol } from "ts-morph";
-import { getApiId } from "../../api_crawler/get_api_id";
-import { SourceInfo } from "../../api_reference_crawler/find_references";
-import { BasicPluginInfo, getKibanaRelativePath, getPluginForPath } from "../../plugin_utils";
-import { ReferenceDoc } from "../reference_doc";
+import { getApiId } from "../api_crawler/get_api_id";
+import { SourceInfo } from "../api_reference_crawler/find_references";
+import { BasicPluginInfo, getKibanaRelativePath, getPluginForPath } from "../plugin_utils";
+import { ReferenceDoc } from "./reference_doc";
 
 /**
  * Add all references for the given node into refs.
