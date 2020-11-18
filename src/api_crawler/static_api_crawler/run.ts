@@ -1,4 +1,4 @@
 
-import { crawlApi } from './crawl_api';
+import { crawlStaticApi } from './crawl_static_api';
 
-crawlApi();
+crawlStaticApi();
