@@ -63,3 +63,17 @@ export function extractVersionNumber(name: string) {
 		return undefined;
 	}
 }
+
+export function getRelativeKibanaPath(fullPath: string): string {
+	const parts = fullPath.split('/');
+	if (parts.indexOf('x-pack') >= 0) {
+		return parts.slice(parts.indexOf('x-pack'), parts.length).join('/');
+	} else if (parts.indexOf('src') >= 0) {
+		return parts.slice(parts.indexOf('src'), parts.length).join('/');
+	}
+	return fullPath;
+}
+
+export function getPublicOrServer(path: string) {
+  return path.indexOf('/public/') >= 0 ? 'public' : 'server';
+}

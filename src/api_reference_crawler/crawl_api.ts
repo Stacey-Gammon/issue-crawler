@@ -3,8 +3,8 @@ import  elasticsearch from 'elasticsearch';
 import  { elasticsearchEnv } from '../issue_crawler/config';
 
 import { getPluginInfoForRepo, indexPluginInfo, PluginInfo } from "../plugin_utils";
-import { PublicAPIDoc, ReferenceDoc } from "./service";
-import { collectApiInfoForConfig } from './build_api_docs';
+import { PublicAPIDoc, ReferenceDoc } from "./types";
+import { collectApiInfoForConfig } from './collect_api_info';
 import { createIndex, getIndexName, indexDocs } from "../es_utils";
 import { checkoutDates, repo } from "./config";
 import { checkoutRepo, getCommitDate, getCommitHash } from "../git_utils";

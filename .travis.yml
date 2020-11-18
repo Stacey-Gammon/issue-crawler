@@ -1,5 +1,18 @@
 language: node_js
 node_js:
   - lts/*
-script: yarn crawlRefs
+jobs:
+  include:
+    - stage: refs
+      script: yarn crawlStaticRefs public/index.ts
+    -
+      script: yarn crawlStaticRefs server/index.ts
+    -
+      script: yarn crawlContractRefs public/plugin.ts
+    -
+      script: yarn crawlContractRefs server/plugin.ts
+    - stage: api
+      script: yarn crawlContractApi
+    -
+      script: yarn crawlStaticApi
 cache: yarn

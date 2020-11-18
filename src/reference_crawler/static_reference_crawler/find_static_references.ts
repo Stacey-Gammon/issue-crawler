@@ -1,20 +1,20 @@
 import { ClassDeclaration,
   EnumDeclaration, FunctionDeclaration,
-   SourceFile, SyntaxKind, VariableDeclaration,
+  SourceFile, SyntaxKind, VariableDeclaration,
   InterfaceDeclaration, TypeAliasDeclaration,
    Identifier, 
    MethodDeclaration,
    ParameterDeclaration} from "ts-morph";
-   import { BasicPluginInfo, getPluginForPath } from "../plugin_utils";
-import { PublicAPIDoc, ReferenceDoc } from "./types";
-import { SourceInfo, getPublicOrServer } from './find_references';
+import { SourceInfo } from "../../api_reference_crawler/find_references";
+   import { BasicPluginInfo } from "../../plugin_utils";
+import { getPublicOrServer } from "../../utils";
+import { ReferenceDoc } from "../reference_doc";
 import { addExportReferences } from "./add_export_references";
 
 export function findStaticExportReferences(
     source: SourceFile,
     sourcePlugin: BasicPluginInfo,
-    plugins: Array<BasicPluginInfo>,
-    apiDocs: { [key: string]: PublicAPIDoc }): 
+    plugins: Array<BasicPluginInfo>): 
   { [key:string]: ReferenceDoc } {
   const refDocs: { [key: string]: ReferenceDoc } = {};
 
@@ -29,8 +29,6 @@ export function findStaticExportReferences(
   exported.forEach((val) => {
     val.forEach(ed => {
       console.log(`Checking refereneces for export of type ${ed.getKindName()}`);
-
-      const preRefCnt = Object.values(refDocs).length; 
       let name: string | undefined = '';
 
       if ((ed as FunctionDeclaration).getName && (
@@ -49,26 +47,9 @@ export function findStaticExportReferences(
         extractStaticReferencesToEntity(ed as TypeAliasDeclaration, sourceInfo, plugins, refDocs);
       } else if (ed.getKind() === SyntaxKind.Identifier) {
         const ident = ed as Identifier;
-        ident.getImplementations().forEach(imp => imp.getNode())
+        ident.getImplementations().forEach(imp => imp.getNode());
         name = ident.getSymbol()?.getName();
         console.log('WARN: Not tracking identity symbol ' + ident.getText());
-        return;
-      } else if (ed.getKind() === SyntaxKind.SourceFile) {
-        // @ts-ignore
-        const file = ed as SourceFile;
-        extractSourceFileReferences(file, sourceInfo, plugins);
-        console.warn(`WARN: ${sourcePlugin.name}.${sourceInfo.publicOrServer} is exporting a SourceFile. Is this intentional?`);
-        const id = `${sourceInfo.sourcePlugin.name}.${sourceInfo.publicOrServer}.${name}`;
-        apiDocs[id] = {
-          plugin: sourceInfo.sourcePlugin.name,
-          file: { path: sourceInfo.sourceFile },
-          name: file.getFilePath(),
-          team: sourceInfo.sourcePlugin.teamOwner,
-          type: ed.getKindName(),
-          isStatic: true,
-          refCount: 0,
-          id,
-        };
         return;
       } else {
         if (ed.getText().trim() !== '{}') {
@@ -82,25 +63,11 @@ export function findStaticExportReferences(
         console.warn(`WARN: ${sourcePlugin.name} has unnamed export`);
         return;
       }
-
-      const refCnt = Object.values(refDocs).length - preRefCnt;
-      const id = `${sourceInfo.sourcePlugin.name}.${sourceInfo.publicOrServer}.${name}`;
-      apiDocs[id] = {
-        plugin: sourceInfo.sourcePlugin.name,
-        file: { path: sourceInfo.sourceFile },
-        name,
-        team: sourceInfo.sourcePlugin.teamOwner,
-        refCount: refCnt,
-        type: ed.getKindName(),
-        isStatic: true,
-        id
-      };
     });
   });
 
   return refDocs;
 }
-
 
 export function extractStaticReferencesToEntity(
   entity: FunctionDeclaration | ClassDeclaration | VariableDeclaration | EnumDeclaration | MethodDeclaration | ParameterDeclaration | InterfaceDeclaration | TypeAliasDeclaration,
@@ -115,17 +82,4 @@ export function extractStaticReferencesToEntity(
     return [];
   }
   addExportReferences(entity.findReferences(), entity.getName()!, sourceInfo, plugins, refs, true);
-}
-
-function extractSourceFileReferences(
-  file: SourceFile,
-  sourceInfo: SourceInfo,
-  plugins: Array<BasicPluginInfo>): void {
-  file.getReferencingNodesInOtherSourceFiles().forEach(node => {
-    const refPlugin = getPluginForPath(node.getSourceFile().getFilePath(), plugins);
-
-    if (refPlugin && refPlugin.name !== sourceInfo.sourcePlugin.name) {
-      console.log(`file ${file.getFilePath()} is referenced in ${refPlugin} - ${node.getSourceFile().getFilePath()}`);
-    }
-  });
 }

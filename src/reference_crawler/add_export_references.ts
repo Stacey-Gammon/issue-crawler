@@ -1,8 +1,20 @@
 import { ReferencedSymbol } from "ts-morph";
-import { BasicPluginInfo, getPluginForPath } from "../plugin_utils";
-import { SourceInfo } from "./find_references";
-import { ReferenceDoc } from "./types";
+import { getApiId } from "../../api_crawler/get_api_id";
+import { SourceInfo } from "../../api_reference_crawler/find_references";
+import { BasicPluginInfo, getKibanaRelativePath, getPluginForPath } from "../../plugin_utils";
+import { ReferenceDoc } from "../reference_doc";
 
+/**
+ * Add all references for the given node into refs.
+ * 
+ * @param nodeRefs
+ * @param name 
+ * @param sourceInfo 
+ * @param plugins 
+ * @param refs 
+ * @param isStatic 
+ * @param lifecycle 
+ */
 export function addExportReferences(
   nodeRefs: ReferencedSymbol[],
   name: string,
@@ -10,11 +22,9 @@ export function addExportReferences(
   plugins: Array<BasicPluginInfo>,
   refs: { [key: string]: ReferenceDoc },
   isStatic: boolean,
-  lifecycle?: string): number {
+  lifeCycle?: string): number {
   let refCnt = 0;  
-  const id = lifecycle ?
-    `${sourceInfo.sourcePlugin.name}.${sourceInfo.publicOrServer}.${lifecycle}.${name}` :
-    `${sourceInfo.sourcePlugin.name}.${sourceInfo.publicOrServer}.${name}`;
+  const id = getApiId({ plugin: sourceInfo.sourcePlugin.name, lifeCycle, publicOrServer: sourceInfo.publicOrServer, name });
   console.log(`Collecting ${nodeRefs.length} references for ${id}`)
   nodeRefs.forEach(node => {
     node.getReferences().forEach(ref => {
@@ -31,16 +41,16 @@ export function addExportReferences(
             id,
             plugin: sourceInfo.sourcePlugin.name,
             team: sourceInfo.sourcePlugin.teamOwner,
-            file: { path: sourceInfo.sourceFile },
+            file: { path: getKibanaRelativePath(sourceInfo.sourceFile) },
             isStatic,
-            lifecycle,
+            lifecycle: lifeCycle,
             name,
             xpack: sourceInfo.sourceFile.indexOf("x-pack") >= 0
           },
           reference: {
             team: refPlugin.teamOwner,
             plugin: refPlugin.name,
-            file: { path: `${ref.getSourceFile().getFilePath()}:${ref.getNode().getStartLineNumber()}` },
+            file: { path: `${getKibanaRelativePath(ref.getSourceFile().getFilePath())}:${ref.getNode().getStartLineNumber()}` },
             xpack: sourceInfo.sourceFile.indexOf("x-pack") >= 0
           }
         });
