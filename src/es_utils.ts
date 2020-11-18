@@ -29,8 +29,13 @@ export function getIndexName(prefix: string, repo: string) {
   return `${prefix}-${owner}-${repoName}`;
 }
 
-
-export async function indexDocs<Doc>(client: Client, docs: Array<Doc>, commitHash: string, commitDate: string, indexName: string, getId?: (d: Doc) => string) {
+export async function indexDocs<Doc>(
+    client: Client,
+    docs: Array<Doc>,
+    commitHash: string,
+    commitDate: string,
+    indexName: string,
+    getId?: (d: Doc) => string) {
   if (docs.length === 0) return;
   const batchSize = 500;
   let group = 0;
