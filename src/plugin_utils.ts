@@ -1,7 +1,17 @@
 import { Client } from 'elasticsearch';
 import fs from 'fs';
-import { PublicAPIDoc } from './api_reference_crawler/types';
 import { indexDocs } from './es_utils';
+
+export interface PublicAPIDoc {
+  plugin: string;
+  id: string;
+  file: { path: string };
+  name: string;
+  team: string;
+  refCount: number;
+  type: string;
+  isStatic: boolean;
+}
 
 export interface BasicPluginInfo {
   name: string;

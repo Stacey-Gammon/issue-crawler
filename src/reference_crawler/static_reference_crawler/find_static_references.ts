@@ -5,7 +5,7 @@ import { ClassDeclaration,
    Identifier, 
    MethodDeclaration,
    ParameterDeclaration} from "ts-morph";
-import { SourceInfo } from "../../api_reference_crawler/find_references";
+import { SourceInfo } from "../source_info";
    import { BasicPluginInfo } from "../../plugin_utils";
 import { getPublicOrServer } from "../../utils";
 import { ReferenceDoc } from "../reference_doc";

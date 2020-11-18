@@ -1,6 +1,6 @@
 import { ReferencedSymbol } from "ts-morph";
 import { getApiId } from "../api_crawler/get_api_id";
-import { SourceInfo } from "../api_reference_crawler/find_references";
+import { SourceInfo } from "./source_info";
 import { BasicPluginInfo, getPluginForPath } from "../plugin_utils";
 import { getRelativeKibanaPath } from "../utils";
 import { ReferenceDoc } from "./reference_doc";
@@ -26,7 +26,6 @@ export function addExportReferences(
   lifeCycle?: string): number {
   let refCnt = 0;  
   const id = getApiId({ plugin: sourceInfo.sourcePlugin.name, lifeCycle, publicOrServer: sourceInfo.publicOrServer, name });
-  console.log(`Collecting ${nodeRefs.length} references for ${id}`)
   nodeRefs.forEach(node => {
     node.getReferences().forEach(ref => {
       const docId = `${id}.${ref.getSourceFile().getFilePath().replace('/', '')}:${ref.getNode().getStartLineNumber()}`;
@@ -58,6 +57,6 @@ export function addExportReferences(
       }
     });
   });
-
+  console.log(`Collected ${refCnt} references for ${id}`)
   return refCnt;
 }

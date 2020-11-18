@@ -1,6 +1,6 @@
-import { Node, Project, PropertyDeclaration, ReferencedSymbol, SourceFile, SyntaxKind, Type } from "ts-morph";
+import { MethodDeclaration, Node, Project, ReferencedSymbol, SourceFile, SyntaxKind, Type } from "ts-morph";
 import { getApiId } from "./api_crawler/get_api_id";
-import { BasicPluginInfo, getPluginForNestedPath, getPluginForPath, getPluginInfoForRepo, getPluginNameFromPath, getTeamOwner, readmeExists } from "./plugin_utils";
+import { BasicPluginInfo, getPluginForNestedPath, getPluginForPath, getPluginNameFromPath, readmeExists } from "./plugin_utils";
 import { getPublicOrServer } from "./utils";
 
 export interface Api {
@@ -99,8 +99,9 @@ function addImplicitApi({ file, returnType, plugin, lifeCycle, apis }: ImplicitA
         if (d.getKind() === SyntaxKind.PropertyAssignment ||
             d.getKind()=== SyntaxKind.ShorthandPropertyAssignment ||
             d.getKind() === SyntaxKind.PropertySignature ||
-            d.getKind() === SyntaxKind.PropertyDeclaration) {
-          const pa = d as PropertyDeclaration;
+            d.getKind() === SyntaxKind.PropertyDeclaration ||
+            d.getKind() === SyntaxKind.MethodDeclaration) {
+          const pa = d as MethodDeclaration;
           if (pa.getName() === 'Symbol.toStringTag') {
             console.warn('WARN: Not ingesting API for Symbol.toStringTag. Information may be lost.');
             return;
@@ -179,16 +180,16 @@ function addApiFromNode(
   lifeCycle: string,
   apis: { [key: string]: Api }) {
   const publicOrServer = getPublicOrServer(file);
-  const identifer = `${plugin}.${publicOrServer}.${lifeCycle}`;  
+  const identifer = `${plugin.name}.${publicOrServer}.${lifeCycle}`;  
   if (Node.isInterfaceDeclaration(node)) {
     if (node.getName() === 'Promise') {
       console.warn(`${identifer} return type is a Promise. Is information being lost? Text is`, node.getText());
       return [];
     }
 
-    console.log(`addPropertyRefsFromNode) Getting all properties for node ${identifer}`);
-
-    node.getProperties().forEach(m => {
+    const properties = node.getProperties();
+    console.log(`Getting ${properties.length} api properties for node ${identifer}`);
+    properties.forEach(m => {
       const id = getApiId({ plugin: plugin.name, lifeCycle, publicOrServer, name: m.getName() });
       apis[id] = {
         plugin: plugin.name,

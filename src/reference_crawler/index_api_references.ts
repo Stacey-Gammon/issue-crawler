@@ -14,8 +14,9 @@ export async function indexApiReferences(
   indexAsLatest: boolean,
   plugins: Array<BasicPluginInfo>) {
   const refs: { [key: string]: ReferenceDoc } = {};
-  Object.values(apis).forEach(api => {
-    const prevCnt = Object.values(refs).length;
+  const apiArray = Object.values(apis);
+  apis = {}; // Travis ci is having js memory issues. See if this will help. Could be the node references??
+  apiArray.forEach(api => {
     const sourcePlugin = getPluginForPath(api.file.path, plugins);
 
     if (sourcePlugin !== undefined) {
@@ -25,10 +26,12 @@ export async function indexApiReferences(
         sourceFile: api.file.path 
       }
       addExportReferences(api.node.findReferences(), api.name, sourceInfo, plugins, refs, true);
+      console.log(`Collected ${Object.values(refs).length} references...`);
     } else {
       console.log('WARN');
     }
-    console.log(`Found ${Object.values(refs).length - prevCnt} references for ${api.id}.`);
+    // Travis ci is having js memory issues. See if this will help. Could be the node references??
+    api.node = { findReferences: () => []};
   });
   
   await indexRefDocs(client, commitHash, commitDate, Object.values(refs), indexAsLatest);

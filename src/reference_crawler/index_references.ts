@@ -11,6 +11,7 @@ export async function indexRefDocs(
   commitDate: string,
   refDocs: Array<ReferenceDoc>,
   indexAsLatest: boolean) {
+console.log(`Indexing ${refDocs.length} reference docs`);
 const refsIndexName = getIndexName('references', repo);
 await indexDocs<ReferenceDoc>(
   client,

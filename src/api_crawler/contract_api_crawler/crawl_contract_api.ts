@@ -43,6 +43,10 @@ export async function crawlContractApi() {
   }
 }
 
+const fileGroups = [
+  ['core/public/']
+]
+
 export async function indexApi(
   client: elasticsearch.Client,
   repoPath: string,
