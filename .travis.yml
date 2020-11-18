@@ -1,8 +1,11 @@
 language: node_js
+env:
+  global:
+    - NODE_OPTIONS="–-max_old_space_size=8192"
 node_js:
-  - lts/*
+  - 12
 before_script:
-  - export NODE_OPTIONS=–max_old_space_size=8192
+  - export NODE_OPTIONS="-–max_old_space_size=8192"
 jobs:
   include:
     - stage: refs
