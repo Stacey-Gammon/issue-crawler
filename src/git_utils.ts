@@ -2,7 +2,7 @@
 import { SimpleGit } from "simple-git";
 import git from "simple-git/promise";
 import tmp from 'tmp';
-
+import moment from 'moment';
 export interface GitInfo {
   repoPath: string,
   commitHash: string,
@@ -34,4 +34,14 @@ export async function getCommitDate(currentGit: SimpleGit)  {
   return new Date(
     await currentGit.raw(["log", "-1", "--format=%cd"])
   ).toISOString();
+}
+
+export async function checkoutRoundedDate(currentGit: SimpleGit, date?: string) {
+  const yesterday = moment();
+  yesterday.subtract(1, 'd');
+  const checkout = date ?
+    `master@{${date}}` :
+    `master@{${yesterday.format('YYYY-MM-DD')} 12:00:00}`;
+  console.log(`Checking out ${checkout}`);
+  await currentGit.checkout(checkout);
 }

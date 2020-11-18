@@ -40,6 +40,7 @@ export async function indexDocs<Doc>(client: Client, docs: Array<Doc>, commitHas
     const index = group * batchSize;
     for (let i = index; i < docs.length && i < batchSizeMax; i++) {
       if (docs[i]) {
+        console.log(docs[i]);
         body.push({ index: { 
           _index: indexName,
           _type: "_doc",

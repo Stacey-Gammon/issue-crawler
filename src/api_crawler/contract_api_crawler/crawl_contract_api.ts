@@ -6,7 +6,7 @@ import  { elasticsearchEnv } from '../../config';
 import { getPluginInfoForRepo } from "../../plugin_utils";
 import { createIndex, getIndexName } from "../../es_utils";
 import { checkoutDates, repo } from "../config";
-import { checkoutRepo, getCommitDate, getCommitHash } from "../../git_utils";
+import { checkoutRepo, checkoutRoundedDate, getCommitDate, getCommitHash } from "../../git_utils";
 import { Project, SourceFile } from 'ts-morph';
 import { getContractApi } from '../../api_utils';
 import { apiIndexMapping } from '../api_doc';
@@ -24,9 +24,7 @@ export async function crawlContractApi() {
 
   try {
     for (const date of checkoutDates) {
-      const checkout = date ? `master@{${date}}` : 'master';
-      await currentGit.checkout(checkout);
-      console.log(`Indexing current state of master with ${checkout}`);
+      await checkoutRoundedDate(currentGit, date);
       const commitDate = await getCommitDate(currentGit);
       const commitHash = await getCommitHash(currentGit);
 
@@ -42,10 +40,6 @@ export async function crawlContractApi() {
     console.log(`Indexing ${repo} failed: `, e);
   }
 }
-
-const fileGroups = [
-  ['data/public/']
-]
 
 export async function indexApi(
   client: elasticsearch.Client,
