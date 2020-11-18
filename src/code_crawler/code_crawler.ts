@@ -7,7 +7,7 @@ import path from 'path';
 import find from 'find';
 import sloc from 'sloc';
 import tmp from 'tmp';
-import { BasicPluginInfo, getPluginInfoForRepo, getCodeOwnersFile, getTeamOwner, PluginInfo } from "../plugin_utils";
+import { BasicPluginInfo, getPluginInfoForRepo, getCodeOwnersFile, getTeamOwner, PluginInfo, getPluginForPath } from "../plugin_utils";
 import { getIndexName, indexDocs } from "../es_utils";
 import { repo, checkoutDates } from './config';
 import { checkoutRepo, getCommitDate, getCommitHash } from "../git_utils";
@@ -36,6 +36,7 @@ interface AnalyzedFile {
   teamOwner: string;
   loc: number;
   anyCountOverLoc: number;
+  plugin: string;
 }
 
 interface FileDocAttributes extends AnalyzedFile {
@@ -81,6 +82,7 @@ async function analyze(localPath: string, plugins: Array<BasicPluginInfo>) {
           "dangerouslyGetActiveInjector",
         ];
 
+        const plugin = getPluginForPath(file, plugins);
         const teamOwner = getTeamOwner(file, plugins);
         const anyCount = (code.match(/: any/g) || []).length;
         const loc = (code.match(/\n/g) || []).length;
@@ -91,7 +93,8 @@ async function analyze(localPath: string, plugins: Array<BasicPluginInfo>) {
             dirs.includes("__tests__") || filename.indexOf(".test.") > -1 || teamOwner === 'kibana-qa' || dirs.includes('test') || dirs.includes('test_utils'),
           ext,
           filename,
-          teamOwner,
+          plugin: plugin ? plugin.name : 'noPlugin',
+          teamOwner: plugin && plugin?.teamOwner ? plugin.teamOwner : 'noOwner',
           anyCount,
           loc,
           anyCountOverLoc: anyCount/loc,
@@ -159,7 +162,7 @@ export async function crawlCode() {
   const { repoPath, currentGit } = await checkoutRepo(repo, process.env.LOCAL_REPO_DIR);
   try {
     for (const date of checkoutDates) {
-      const checkout = date ? `master@${date}` : 'master';
+      const checkout = date ? `master@{${date}}` : 'master';
       await currentGit.checkout(checkout);
       console.log(`Indexing current state of master with ${checkout}`);
 
