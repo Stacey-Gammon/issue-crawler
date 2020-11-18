@@ -1,5 +1,5 @@
-import { extractValues , extractVersionNumber, extractIssueNumber } from './utils';
-import { getKibanaRelativePath, getTeamOwner } from './plugin_utils';
+import { extractValues , extractVersionNumber, extractIssueNumber, getRelativeKibanaPath } from './utils';
+import { getKibanaRelativePath, getPluginFromPath, getTeamOwner } from './plugin_utils';
 
 it('extractValue', () => {
   const themes = extractValues([{ name: 'Dependency:SIEM' }, { name: 'Feature:Bi hoo' }], 'Feature');
@@ -34,6 +34,19 @@ it('getKibanaRelativePath', () => {
   expect(getKibanaRelativePath('/Users/gammon/Elastic/kibana/examples/embeddable_examples/public/book/book_embeddable_factory.tsx'))
     .toBe('kibana/examples/embeddable_examples/public/book/book_embeddable_factory.tsx')
 });
+
+it('getRelativeKibanaPath', () => {
+  let relativePath = getRelativeKibanaPath('/tmp/tmp-5631-rv2QP2a7ISWH/x-pack/plugins/server/authorization/ui');
+  expect(relativePath).toBe('x-pack/plugins/server/authorization/ui');
+
+  relativePath = getRelativeKibanaPath('/tmp/tmp-5631-rv2QP2a7ISWH/src/plugins/server/authorization/ui');
+  expect(relativePath).toBe('src/plugins/server/authorization/ui');
+})
+
+it('getPluginFromPath', () => {
+  expect(getPluginFromPath('Users/gammon/Elastic/kibana/src/core/f/a')).toBe('core');
+  expect(getPluginFromPath('Users/gammon/Elastic/kibana/x-pack/plugins/alerts/public/index.ts')).toBe('alerts');
+})
 
 // it('extractPluginName', () => {
 //   expect(extractPluginNameAndPath('/x-pack/plugins/apm/asdjfklsa')!.pluginPath).toEqual('/x-pack/plugins/apm');

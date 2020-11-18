@@ -1,4 +1,4 @@
-import { PublicAPIDoc, ReferenceDoc } from "./service";
+import { PublicAPIDoc, ReferenceDoc } from "./types";
 import  elasticsearch from 'elasticsearch';
 
 import { Project, SourceFile } from "ts-morph";
@@ -7,11 +7,7 @@ import { findStaticExportReferences } from "./find_static_references";
 import { getIndexName, indexDocs } from "../es_utils";
 import { repo } from "./config";
 import { findPluginAPIUsages } from "./find_references";
-
-// export function collectApiInfo(path: string): { refDocs: Array<ReferenceDoc>, apiDocs: Array<PublicAPIDoc> } {
-//   // This tsconfig will capture both oss and x-pack code, while the top tsconfig will not capture x-pack.
-//   return collectApiInfoForConfig(path, `${path}/x-pack/tsconfig.json`);
-// }
+import { getRelativeKibanaPath } from "../utils";
 
 export async function collectApiInfoForConfig(
   client: elasticsearch.Client,
@@ -82,6 +78,7 @@ async function collectApiInfoForFiles(
   for (const source of files) {
     let plugin = getPluginForPath(source.getFilePath(), pluginInfo);
 
+    console.log(`Collecting API references for file ${source.getFilePath()}`);
     if (!plugin) {
       const path = getPluginForNestedPath(source.getFilePath());
 
@@ -113,8 +110,10 @@ async function collectApiInfoForFiles(
 }
 
 function getRefDocId(commitHash: string, doc: ReferenceDoc) {
+  const relativeSourceFile = getRelativeKibanaPath(doc.source.file.path);
+  const relativeRefFile = getRelativeKibanaPath(doc.source.file.path);
   return `
-    ${commitHash}${doc.source.plugin}${doc.source.file.path.replace('/', '')}${doc.source.name}.${doc.reference.file.path.replace('/', '')}
+    ${commitHash}${doc.source.plugin}${relativeSourceFile.replace('/', '')}${doc.source.name}.${relativeRefFile.replace('/', '')}
   `
 }
 

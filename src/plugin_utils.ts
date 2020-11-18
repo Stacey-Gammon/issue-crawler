@@ -1,6 +1,6 @@
 import { Client } from 'elasticsearch';
 import fs from 'fs';
-import { PublicAPIDoc } from './api_reference_crawler/service';
+import { PublicAPIDoc } from './api_reference_crawler/types';
 import { indexDocs } from './es_utils';
 
 export interface BasicPluginInfo {
@@ -15,6 +15,11 @@ export interface PluginInfo extends BasicPluginInfo {
   refCount: number;
 }
 
+/**
+ * Returns the plugin that the file belongs to.
+ * @param path Should be a file that is nested inside a plugin
+ * @param plugins A list of plugins to search through.
+ */
 export function getPluginForPath<I extends BasicPluginInfo = BasicPluginInfo>(
   path: string,
   plugins: Array<I>): I | undefined {
@@ -23,6 +28,19 @@ export function getPluginForPath<I extends BasicPluginInfo = BasicPluginInfo>(
 
 export function getKibanaRelativePath(fullFilePath: string) {
   return fullFilePath.substr(fullFilePath.indexOf('kibana/'));
+}
+
+export function getPluginFromPath(path: string) {
+  const parts = path.split('/');
+  while (parts.length > 0) {
+    const path = parts.join('/');
+    const isPlugin = fs.existsSync(path + '/kibana.json') || path.endsWith('src/core');
+    if (isPlugin) {
+      return parts[parts.length - 1];
+    } else {
+      parts.pop();
+    }
+  }
 }
 
 export function getTeamOwner<I extends BasicPluginInfo = BasicPluginInfo>(filePath: string, plugins: Array<I>): string {

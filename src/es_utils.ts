@@ -51,17 +51,15 @@ export async function indexDocs<Doc>(client: Client, docs: Array<Doc>, commitHas
       }
     }
     try {
-      console.log(`${group} Indexing ${body.length/2}/${docs.length} docs into ${indexName}...`);
+      console.log(`${group + 1}) Indexing ${(body.length/2) * (group + 1)}/${docs.length} docs into ${indexName}...`);
       const response = await client.bulk({
         body
       });
-      // console.log(JSON.stringify(response));
-      // console.log('response', response);
       if (response.errors) {
         console.log(`Encountered errors:`);
         console.log(JSON.stringify(response));
       } else {
-        console.log(`${group} Successfully indexed ${body.length/2}/${docs.length} docs into ${indexName}.`);
+        console.log(`${group + 1}) Successfully indexed ${(body.length/2) * (group + 1)}/${docs.length} docs into ${indexName}.`);
       }
     } catch (e) {
       console.error(e);
