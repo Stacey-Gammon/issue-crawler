@@ -25,7 +25,7 @@ export async function indexApiReferences(
         publicOrServer: getPublicOrServer(api.file.path), 
         sourceFile: api.file.path 
       }
-      addExportReferences(api.node.findReferences(), api.name, sourceInfo, plugins, refs, true);
+      addExportReferences(api.node.findReferences(), api.name, sourceInfo, plugins, refs, false);
       console.log(`Collected ${Object.values(refs).length} references...`);
     } else {
       console.log('WARN');
@@ -33,6 +33,5 @@ export async function indexApiReferences(
     // Travis ci is having js memory issues. See if this will help. Could be the node references??
     api.node = { findReferences: () => []};
   });
-  
   await indexRefDocs(client, commitHash, commitDate, Object.values(refs), indexAsLatest);
 }
