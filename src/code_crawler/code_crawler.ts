@@ -1,16 +1,16 @@
 
 import git from "simple-git/promise";
 import  elasticsearch from 'elasticsearch';
-import  { elasticsearchEnv, codeRepos } from '../issue_crawler/config';
+import  { elasticsearchEnv } from '../issue_crawler/config';
 import fs from 'fs';
 import path from 'path';
 import find from 'find';
 import sloc from 'sloc';
 import tmp from 'tmp';
-import { BasicPluginInfo, getPluginInfoForRepo, getCodeOwnersFile, getTeamOwner, PluginInfo, getPluginForPath } from "../plugin_utils";
+import { BasicPluginInfo, getPluginInfoForRepo, getTeamOwner, getPluginForPath } from "../plugin_utils";
 import { getIndexName, indexDocs } from "../es_utils";
 import { repo, checkoutDates } from './config';
-import { checkoutRepo, getCommitDate, getCommitHash } from "../git_utils";
+import { checkoutRepo, checkoutRoundedDate, getCommitDate, getCommitHash } from "../git_utils";
 
 const client = new elasticsearch.Client(elasticsearchEnv);
 
@@ -43,7 +43,6 @@ interface FileDocAttributes extends AnalyzedFile {
   commitHash: string;
   commitDate: string,
   repo: string,
-  checkout: string,
   indexDate: string;
 };
 
@@ -127,14 +126,13 @@ async function alreadyIndexed(repo: string, commitHash: string) {
   return entries.hits.total > 0;
 }
 
-const getDocument = (commitHash: string, commitDate: string, repo: string, checkout: string) => (file: AnalyzedFile | undefined) => {
+const getDocument = (commitHash: string, commitDate: string, repo: string) => (file: AnalyzedFile | undefined) => {
   if (file) {
     return {
       ...file,
       commitHash,
       commitDate,
       repo,
-      checkout,
       indexDate: new Date().toISOString()
     };
   }
@@ -162,9 +160,7 @@ export async function crawlCode() {
   const { repoPath, currentGit } = await checkoutRepo(repo, process.env.LOCAL_REPO_DIR);
   try {
     for (const date of checkoutDates) {
-      const checkout = date ? `master@{${date}}` : 'master';
-      await currentGit.checkout(checkout);
-      console.log(`Indexing current state of master with ${checkout}`);
+      await checkoutRoundedDate(currentGit, date);
 
       const commitHash = await getCommitHash(currentGit);
       const commitDate = await getCommitDate(currentGit);
@@ -182,7 +178,7 @@ export async function crawlCode() {
       const analyzedFiles = await analyze(repoPath, plugins);
       
       for (let i = 0; i < analyzedFiles.length; i++) {
-        const file = getDocument(commitHash, commitDate, repo, checkout)(analyzedFiles[i]);
+        const file = getDocument(commitHash, commitDate, repo)(analyzedFiles[i]);
         files.push(file);
         if (files.length === 500) {
           await indexFiles(files, repo, commitHash, commitDate);
