@@ -2,7 +2,7 @@ import { Node,
   Project, SourceFile, SyntaxKind, Type, PropertyDeclaration } from "ts-morph";
 import { BasicPluginInfo } from "../plugin_utils";
 import { addExportReferences } from "./add_export_references";
-import { ReferenceDoc, PublicAPIDoc } from "./service";
+import { ReferenceDoc, PublicAPIDoc } from "./types";
 
 export interface SourceInfo {
   sourcePlugin: BasicPluginInfo;
@@ -144,11 +144,16 @@ function addPropertyRefsFromNode(
       return [];
     }
 
+    console.log(`addPropertyRefsFromNode) Getting all properties for node ${identifer}`);
+
     node.getProperties().forEach(m => {
       const refCnt = addExportReferences(m.findReferences(), m.getName(), sourceInfo, plugins, refs, false, lifeCycle);
       const id = `${identifer}.${m.getName()}`;
       if (apiDocs[id]) {
         console.warn(`addPropertyRefsFromNode) Duplicate entry for api doc ${id} with ref Count of ${apiDocs[id].refCount} and new ref count ${refCnt}`);
+        if (apiDocs[id].refCount > refCnt) {
+          return;
+        }
       }
       console.log(`addPropertyRefsFromNode) ${id} to ${refCnt}`);
       apiDocs[id] = {

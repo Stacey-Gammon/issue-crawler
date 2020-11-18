@@ -23,7 +23,7 @@ export interface PublicAPIDoc {
   file: { path: string };
   name: string;
   team: string;
-  refCount?: number;
+  refCount: number;
   type: string;
   isStatic: boolean;
 }

@@ -4,11 +4,15 @@
   "description": "Crawls GitHub issues and index them into an Elasticsearch instance",
   "main": "index.js",
   "scripts": {
-    "test": "rimraf build && tsc && jest",
-    "build": "rimraf build && tsc",
-    "crawlRefs": "rimraf build && tsc && node build/api_reference_crawler/run.js",
-    "crawlCode": "rimraf build && tsc && node build/code_crawler/run.js",
-    "crawlIssues": "rimraf build && tsc && node build/issue_crawler/run.js"
+    "test": "rm -rf build && npx tsc && jest",
+    "build": "rm -rf build && npx tsc",
+    "crawlRefs": "rm -rf build && npx tsc && node build/api_reference_crawler/run.js",
+    "crawlCode": "rm -rf build && npx tsc && node build/code_crawler/run.js",
+    "crawlIssues": "rm -rf build && npx tsc && node build/issue_crawler/run.js",
+    "crawlStaticRefs": "rm -rf build && npx tsc && node build/reference_crawler/static_reference_crawler/run.js",
+    "crawlContractRefs": "rm -rf build && npx tsc && node build/reference_crawler/contract_reference_crawler/run.js",
+    "crawlStaticApi": "rm -rf build && npx tsc && node build/api_crawler/static_api_crawler/run.js",
+    "crawlContractApi": "rm -rf build && npx tsc && node build/api_crawler/contract_api_crawler/run.js"
   },
   "author": "Tim Roes <mail@timroes.de>",
   "license": "Apache-2.0",
@@ -31,6 +35,6 @@
     "@types/tmp": "^0.2.0",
     "jest": "^26.4.2",
     "ts-morph": "^8.1.2",
-    "typescript": "^4.0.2"
+    "typescript": "^4.0.5"
   }
 }
