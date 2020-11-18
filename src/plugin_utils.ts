@@ -26,10 +26,6 @@ export function getPluginForPath<I extends BasicPluginInfo = BasicPluginInfo>(
   return plugins.find(plugin => path.includes(plugin.path));
 }
 
-export function getKibanaRelativePath(fullFilePath: string) {
-  return fullFilePath.substr(fullFilePath.indexOf('kibana/'));
-}
-
 export function getPluginFromPath(path: string) {
   const parts = path.split('/');
   while (parts.length > 0) {
