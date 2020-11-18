@@ -1,5 +1,5 @@
 import { extractValues , extractVersionNumber, extractIssueNumber, getRelativeKibanaPath } from './utils';
-import { getKibanaRelativePath, getPluginFromPath, getTeamOwner } from './plugin_utils';
+import { getPluginFromPath, getTeamOwner } from './plugin_utils';
 
 it('extractValue', () => {
   const themes = extractValues([{ name: 'Dependency:SIEM' }, { name: 'Feature:Bi hoo' }], 'Feature');
@@ -30,11 +30,6 @@ it('getTeamOwner', () => {
   expect(owner).toBe('beats');
 });
 
-it('getKibanaRelativePath', () => {
-  expect(getKibanaRelativePath('/Users/gammon/Elastic/kibana/examples/embeddable_examples/public/book/book_embeddable_factory.tsx'))
-    .toBe('kibana/examples/embeddable_examples/public/book/book_embeddable_factory.tsx')
-});
-
 it('getRelativeKibanaPath', () => {
   let relativePath = getRelativeKibanaPath('/tmp/tmp-5631-rv2QP2a7ISWH/x-pack/plugins/server/authorization/ui');
   expect(relativePath).toBe('x-pack/plugins/server/authorization/ui');
@@ -44,11 +39,11 @@ it('getRelativeKibanaPath', () => {
 })
 
 it('getPluginFromPath', () => {
-  expect(getPluginFromPath('Users/gammon/Elastic/kibana/src/core/f/a')).toBe('core');
-  expect(getPluginFromPath('Users/gammon/Elastic/kibana/x-pack/plugins/alerts/public/index.ts')).toBe('alerts');
+  expect(getPluginFromPath('/Users/gammon/Elastic/kibana/src/core/f/a')).toBe('core');
+  expect(getPluginFromPath('/Users/gammon/Elastic/kibana/x-pack/plugins/alerts/public/index.ts')).toBe('alerts');
 })
 
-// it('extractPluginName', () => {
+// it('extractPluginName', () => { 
 //   expect(extractPluginNameAndPath('/x-pack/plugins/apm/asdjfklsa')!.pluginPath).toEqual('/x-pack/plugins/apm');
 //   expect(extractPluginNameAndPath('/x-pack/plugins/apm/asdjfklsa')!.pluginName).toEqual('apm');
 //   expect(extractPluginNameAndPath('/x-pack/plugins/apm')!.pluginName).toEqual('apm');

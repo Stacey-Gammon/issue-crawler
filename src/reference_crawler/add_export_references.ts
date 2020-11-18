@@ -1,8 +1,9 @@
 import { ReferencedSymbol } from "ts-morph";
-import { getApiId } from "../../api_crawler/get_api_id";
-import { SourceInfo } from "../../api_reference_crawler/find_references";
-import { BasicPluginInfo, getKibanaRelativePath, getPluginForPath } from "../../plugin_utils";
-import { ReferenceDoc } from "../reference_doc";
+import { getApiId } from "../api_crawler/get_api_id";
+import { SourceInfo } from "../api_reference_crawler/find_references";
+import { BasicPluginInfo, getPluginForPath } from "../plugin_utils";
+import { getRelativeKibanaPath } from "../utils";
+import { ReferenceDoc } from "./reference_doc";
 
 /**
  * Add all references for the given node into refs.
@@ -41,7 +42,7 @@ export function addExportReferences(
             id,
             plugin: sourceInfo.sourcePlugin.name,
             team: sourceInfo.sourcePlugin.teamOwner,
-            file: { path: getKibanaRelativePath(sourceInfo.sourceFile) },
+            file: { path: getRelativeKibanaPath(sourceInfo.sourceFile) },
             isStatic,
             lifecycle: lifeCycle,
             name,
@@ -50,7 +51,7 @@ export function addExportReferences(
           reference: {
             team: refPlugin.teamOwner,
             plugin: refPlugin.name,
-            file: { path: `${getKibanaRelativePath(ref.getSourceFile().getFilePath())}:${ref.getNode().getStartLineNumber()}` },
+            file: { path: `${getRelativeKibanaPath(ref.getSourceFile().getFilePath())}:${ref.getNode().getStartLineNumber()}` },
             xpack: sourceInfo.sourceFile.indexOf("x-pack") >= 0
           }
         });
