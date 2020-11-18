@@ -5,7 +5,7 @@ import { getPluginInfoForRepo } from "../../plugin_utils";
 import { referenceIndexMapping, refsIndexName } from "../reference_doc";
 import { createIndex } from "../../es_utils";
 import { checkoutDates, repo } from "../config";
-import { checkoutRepo, getCommitDate, getCommitHash } from "../../git_utils";
+import { checkoutRepo, checkoutRoundedDate, getCommitDate, getCommitHash } from "../../git_utils";
 import { Project, SourceFile } from 'ts-morph';
 import { getContractApi } from '../../api_utils';
 import { indexApiReferences } from '../index_api_references';
@@ -20,9 +20,7 @@ export async function crawlContractReferences() {
 
   try {
     for (const date of checkoutDates) {
-      const checkout = date ? `master@{${date}}` : 'master';
-      await currentGit.checkout(checkout);
-      console.log(`Indexing current state of master with ${checkout}`);
+      await checkoutRoundedDate(currentGit, date);
       const commitDate = await getCommitDate(currentGit);
       const commitHash = await getCommitHash(currentGit);
 
