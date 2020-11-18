@@ -189,7 +189,7 @@ function addApiFromNode(
     console.log(`addPropertyRefsFromNode) Getting all properties for node ${identifer}`);
 
     node.getProperties().forEach(m => {
-      const id = getApiId({ plugin: plugin.name, lifeCycle, publicOrServer, name});
+      const id = getApiId({ plugin: plugin.name, lifeCycle, publicOrServer, name: m.getName() });
       apis[id] = {
         plugin: plugin.name,
         file: { path: file },
