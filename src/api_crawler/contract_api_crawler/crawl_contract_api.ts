@@ -44,7 +44,7 @@ export async function crawlContractApi() {
 }
 
 const fileGroups = [
-  ['core/public/']
+  ['data/public/']
 ]
 
 export async function indexApi(
