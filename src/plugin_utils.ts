@@ -165,7 +165,7 @@ export function fillPluginInfo<T extends BasicPluginInfo>(
       return;
     }
     console.log('team owner of core marked as ' + teamOwner + ' because of file '+ path);
-    path = '/src/core/';
+    path = 'src/core/';
   } 
 
   try {
