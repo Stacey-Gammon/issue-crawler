@@ -25,7 +25,7 @@ export async function indexApis(
     commitDate,
     apiIndexName,
     (doc: ApiDoc) => getApiDocId(commitHash, doc));
-    
+
   if (indexAsLatest) {
     await indexDocs<ApiDoc>(
       client,
