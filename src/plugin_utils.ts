@@ -49,7 +49,16 @@ export function getTeamOwner<I extends BasicPluginInfo = BasicPluginInfo>(filePa
 }
 
 function getTeamName(teamTag: string) {
-  return teamTag.substring(teamTag.indexOf('/') + 1);
+  const teamName = teamTag.substring(teamTag.indexOf('/') + 1);
+
+  // Prepare for team renames coming soon.
+  if (teamName === "kibana-app-arch") {
+    return "kibana-app-services";
+  } else if (teamName === "kibana-platform") {
+    return "kibana-core";
+  }
+  
+  return teamName;
 }
 
 export function extractPluginsFromCodeOwners(
