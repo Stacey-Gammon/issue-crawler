@@ -160,7 +160,7 @@ export async function crawlCode() {
   const { repoPath, currentGit } = await checkoutRepo(repo, process.env.LOCAL_REPO_DIR);
   try {
     for (const date of checkoutDates) {
-      await checkoutRoundedDate(currentGit, date);
+      await checkoutRoundedDate(repoPath, currentGit, date);
 
       const commitHash = await getCommitHash(currentGit);
       const commitDate = await getCommitDate(currentGit);

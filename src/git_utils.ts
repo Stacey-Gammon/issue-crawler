@@ -3,6 +3,8 @@ import { SimpleGit } from "simple-git";
 import git from "simple-git/promise";
 import tmp from 'tmp';
 import moment from 'moment';
+// @ts-ignore
+import exec from 'await-exec';
 export interface GitInfo {
   repoPath: string,
   commitHash: string,
@@ -36,12 +38,17 @@ export async function getCommitDate(currentGit: SimpleGit)  {
   ).toISOString();
 }
 
-export async function checkoutRoundedDate(currentGit: SimpleGit, date?: string) {
+export async function checkoutRoundedDate(
+  repoPath: string,
+  currentGit: SimpleGit,
+  date?: string) {
   const yesterday = moment();
   yesterday.subtract(1, 'd');
   const checkout = date ?
     `master@{${date}}` :
     `master@{${yesterday.format('YYYY-MM-DD')} 12:00:00}`;
-  console.log(`Checking out ${checkout}`);
-  await currentGit.checkout(checkout);
+  const response = await exec(`cd ${repoPath} && git rev-list -1 --before="${checkout}" master`); 
+  const hash = response.stdout.trim();
+  console.log(`Checking out ${hash} as ${checkout}`);
+  await currentGit.checkout(hash);
 }

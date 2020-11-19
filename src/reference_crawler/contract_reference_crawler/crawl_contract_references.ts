@@ -20,7 +20,7 @@ export async function crawlContractReferences() {
 
   try {
     for (const date of checkoutDates) {
-      await checkoutRoundedDate(currentGit, date);
+      await checkoutRoundedDate(repoPath, currentGit, date);
       const commitDate = await getCommitDate(currentGit);
       const commitHash = await getCommitHash(currentGit);
 

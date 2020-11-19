@@ -24,12 +24,11 @@ export async function indexApiReferences(
         publicOrServer: getPublicOrServer(api.file.path), 
         sourceFile: api.file.path 
       }
-      addExportReferences(api.node.findReferences(), api.name, sourceInfo, plugins, refs, true);
+      addExportReferences(api.node.findReferences(), api.name, sourceInfo, plugins, refs, false);
     } else {
       console.log('WARN');
     }
     console.log(`Found ${Object.values(refs).length - prevCnt} references for ${api.id}.`);
   });
-  
   await indexRefDocs(client, commitHash, commitDate, Object.values(refs), indexAsLatest);
 }
