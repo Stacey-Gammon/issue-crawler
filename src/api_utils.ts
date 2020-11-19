@@ -12,6 +12,7 @@ export interface Api {
   name: string;
   node: { findReferences: () => ReferencedSymbol[] }
   team: string,
+  lifeCycle?: string;
 }
 
 export interface ImplicitApiOpts {
@@ -62,11 +63,11 @@ async function collectApiInfoForFiles(
   getInfo: (sourceFile: SourceFile, plugin: BasicPluginInfo, apis: { [key: string]: Api }) => void) {
   const apis: { [key: string]: Api } = {};
 
-  console.log(`Collecting API references from ${files.length} files`);
+  console.log(`Collecting API from ${files.length} files`);
   for (const source of files) {
     let plugin = getPluginForPath(source.getFilePath(), pluginInfo);
 
-    console.log(`Collecting API references for file ${source.getFilePath()}`);
+    console.log(`Collecting API for file ${source.getFilePath()}`);
     if (!plugin) {
       const path = getPluginForNestedPath(source.getFilePath());
 
@@ -119,7 +120,8 @@ function addImplicitApi({ file, returnType, plugin, lifeCycle, apis }: ImplicitA
             team: plugin.teamOwner,
             isStatic: false,
             id,
-            node: pa
+            node: pa,
+            lifeCycle
           };
         } else {
           console.log(`p name: ${p.getName()} declaration of kind ${d.getKindName()}`, d.getText());
@@ -199,7 +201,8 @@ function addApiFromNode(
         type: m.getKindName(),
         isStatic: false,
         id,
-        node
+        node,
+        lifeCycle
       };
     });
   }

@@ -4,6 +4,18 @@ import { SourceInfo } from "./source_info";
 import { BasicPluginInfo, getPluginForPath } from "../plugin_utils";
 import { getRelativeKibanaPath } from "../utils";
 import { ReferenceDoc } from "./reference_doc";
+import { Api } from "../api_utils";
+import { apiIndexName } from "../api_crawler/config";
+
+interface Opts {
+  referencesForApi: ReferencedSymbol[],
+  api: Api,
+  sourceInfo: SourceInfo,
+  plugins: Array<BasicPluginInfo>,
+  allReferences: { [key: string]: ReferenceDoc },
+  isStatic: boolean,
+  lifeCycle?: string
+}
 
 /**
  * Add all references for the given node into refs.
@@ -16,34 +28,33 @@ import { ReferenceDoc } from "./reference_doc";
  * @param isStatic 
  * @param lifecycle 
  */
-export function addExportReferences(
-  nodeRefs: ReferencedSymbol[],
-  name: string,
-  sourceInfo: SourceInfo,
-  plugins: Array<BasicPluginInfo>,
-  refs: { [key: string]: ReferenceDoc },
-  isStatic: boolean,
-  lifeCycle?: string): number {
-  let refCnt = 0;  
-  const id = getApiId({ plugin: sourceInfo.sourcePlugin.name, lifeCycle, publicOrServer: sourceInfo.publicOrServer, name });
-  nodeRefs.forEach(node => {
+export function addExportReferences({
+    referencesForApi,
+    api,
+    sourceInfo,
+    plugins,
+    allReferences,
+    isStatic
+  }: Opts): number {
+  let refCnt = 0;
+  referencesForApi.forEach(node => {
     node.getReferences().forEach(ref => {
-      const docId = `${id}.${ref.getSourceFile().getFilePath().replace('/', '')}:${ref.getNode().getStartLineNumber()}`;
-      if (refs[docId]) {
+      const docId = `${api.id}.${ref.getSourceFile().getFilePath().replace('/', '')}:${ref.getNode().getStartLineNumber()}`;
+      if (allReferences[docId]) {
         return;
       }
 
       const refPlugin = getPluginForPath(ref.getSourceFile().getFilePath(), plugins);
       if (refPlugin && refPlugin.name !== sourceInfo.sourcePlugin.name) {
         refCnt++;
-        refs[docId] = ({
+        allReferences[docId] = ({
           source: {
-            id,
+            id: api.id,
             plugin: sourceInfo.sourcePlugin.name,
             team: sourceInfo.sourcePlugin.teamOwner,
             file: { path: getRelativeKibanaPath(sourceInfo.sourceFile) },
             isStatic,
-            lifecycle: lifeCycle,
+            lifecycle: api.lifeCycle,
             name,
             xpack: sourceInfo.sourceFile.indexOf("x-pack") >= 0
           },
@@ -57,6 +68,6 @@ export function addExportReferences(
       }
     });
   });
-  console.log(`Collected ${refCnt} references for ${id}`)
+  console.log(`Collected ${refCnt} references for ${api.id}`)
   return refCnt;
 }

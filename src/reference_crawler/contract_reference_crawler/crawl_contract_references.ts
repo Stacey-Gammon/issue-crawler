@@ -5,14 +5,19 @@ import { getPluginInfoForRepo } from "../../plugin_utils";
 import { referenceIndexMapping, refsIndexName } from "../reference_doc";
 import { createIndex } from "../../es_utils";
 import { getCheckoutDates, repo } from "../config";
-import { checkoutRepo, checkoutRoundedDate, getCommitDate, getCommitHash } from "../../git_utils";
+import { checkoutRepo, checkoutRoundedDate, getCommitDate } from "../../git_utils";
 import { Project, SourceFile } from 'ts-morph';
 import { getContractApi } from '../../api_utils';
-import { indexApiReferences } from '../index_api_references';
+import { indexRefDocs } from '../index_references';
+import { getReferencesForApi } from '../get_references_for_api';
 
 const client = new elasticsearch.Client(elasticsearchEnv);
 
-export async function crawlContractReferences() {
+interface CrawlContractReferenceOps {
+  fileFilters: string[]
+}
+
+export async function crawlContractReferences({ fileFilters }: CrawlContractReferenceOps) {
   const { repoPath, currentGit } = await checkoutRepo(repo, process.env.LOCAL_REPO_DIR);
 
   await createIndex(client, refsIndexName, referenceIndexMapping);
@@ -23,34 +28,42 @@ export async function crawlContractReferences() {
       const commitHash = await checkoutRoundedDate(repoPath, currentGit, date);
       const commitDate = await getCommitDate(currentGit);
 
-      await collectReferences(
+      await collectReferences({
         client,
         repoPath,
-        `${repoPath}/x-pack/tsconfig.json`,
+        tsConfigFilePath: `${repoPath}/x-pack/tsconfig.json`,
         commitHash,
         commitDate,
-        date === undefined);
+        fileFilters,
+        indexAsLatest: date === undefined});
     }
   } catch (e) {
     console.log(`Indexing ${repo} failed: `, e);
   }
 }
 
-export async function collectReferences(
+interface CollectContractReferencesOps {
   client: elasticsearch.Client,
   repoPath: string,
   tsConfigFilePath: string,
   commitHash: string,
   commitDate: string,
-  indexAsLatest: boolean) {
+  indexAsLatest: boolean;
+  fileFilters: string[]
+}
+
+export async function collectReferences({
+  client,
+  repoPath,
+  tsConfigFilePath,
+  commitHash,
+  commitDate,
+  fileFilters,
+  indexAsLatest }: CollectContractReferencesOps) {
   const project = new Project({ tsConfigFilePath });
   const plugins = getPluginInfoForRepo(repoPath);
 
   const sourceFiles = project.getSourceFiles();
-
-  const fileFilters: Array<string> = process.argv.length === 3 ?
-    [process.argv.pop()!] : ['public/plugin.ts', 'server/plugin.ts'];
-
   const files: Array<SourceFile> = sourceFiles.filter((v, i) => {
     return fileFilters.find(filter => v.getFilePath().indexOf(filter) >= 0);
   });
@@ -58,5 +71,7 @@ export async function collectReferences(
   const apis = getContractApi(project, files, plugins);
   console.log(`Collecting references from ${files.length} files...`);
 
-  indexApiReferences(client, apis, commitHash, commitDate, indexAsLatest, false, plugins);
+  const refs = getReferencesForApi({ apis,isStatic: false, plugins });
+
+  await indexRefDocs(client, commitHash, commitDate, Object.values(refs), indexAsLatest);
 }

@@ -6,10 +6,11 @@ import { getPluginInfoForRepo } from "../../plugin_utils";
 import { referenceIndexMapping, refsIndexName } from "../reference_doc";
 import { createIndex } from "../../es_utils";
 import { getCheckoutDates, repo } from "../config";
-import { checkoutRepo, checkoutRoundedDate, getCommitDate, getCommitHash } from "../../git_utils";
+import { checkoutRepo, checkoutRoundedDate, getCommitDate } from "../../git_utils";
 import { Project, SourceFile } from 'ts-morph';
 import { getStaticApi } from '../../api_utils';
-import { indexApiReferences } from '../index_api_references';
+import { getReferencesForApi } from '../get_references_for_api';
+import { indexRefDocs } from '../index_references';
 
 const client = new elasticsearch.Client(elasticsearchEnv);
 
@@ -59,5 +60,7 @@ export async function collectReferences(
   const apis = getStaticApi(staticFiles, plugins);
   console.log(`Collecting references from ${staticFiles.length} files...`);
 
-  indexApiReferences(client, apis, commitHash, commitDate, indexAsLatest, true, plugins);
+  const refs = getReferencesForApi({ apis,isStatic: true, plugins });
+
+  await indexRefDocs(client, commitHash, commitDate, Object.values(refs), indexAsLatest);
 }

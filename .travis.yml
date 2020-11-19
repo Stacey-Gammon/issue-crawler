@@ -5,6 +5,8 @@ before_script:
   - export NODE_OPTIONS="--max_old_space_size=8192"
 jobs:
   include:
+    - stage: test
+      script: yarn test build
     - stage: refs
       script: yarn crawlStaticRefs public/index.ts
     -
