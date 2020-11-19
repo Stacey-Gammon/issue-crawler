@@ -4,7 +4,7 @@ import { checkoutRepo } from '../git_utils';
 import { getPluginInfoForRepo } from '../plugin_utils';
 import { getReferencesForApi } from './get_references_for_api';
 
-it('getReferencesForApi', async () => {
+it('getReferencesForApi explicit', async () => {
   jest.setTimeout(60000*5);
 
   const { repoPath } = await checkoutRepo('elastic/kibana', process.env.LOCAL_REPO_DIR);
@@ -19,10 +19,22 @@ it('getReferencesForApi', async () => {
   
   const apisForEmbedExamples = getContractApi(project, files, plugins);
 
-  const api = Object.values(apisForEmbedExamples).find(api => api.name === 'search');
+  const searchApi = Object.values(apisForEmbedExamples).find(api => api.name === 'search');
 
-  const refs = getReferencesForApi({ apis: { 'search' : api! }, isStatic: false, plugins });
+  const searchRefs = getReferencesForApi({ apis: { 'search' : searchApi! }, isStatic: false, plugins });
 
   // Last checked it was 33 references. If it goes below 20, something might be wrong!
-  expect(refs.length).toBeGreaterThan(20);
+  expect(searchRefs.length).toBeGreaterThan(20);
+
+  const embeddableRef = searchRefs.find(ref => ref.reference.plugin === 'embeddable');
+
+  expect(embeddableRef).toBeUndefined();
+
+  // const autoCompleteApi = Object.values(apisForEmbedExamples).find(api => api.name === 'search');
+
+  // const autoCompleteRefs = getReferencesForApi({ apis: { 'autocomplete' : autoCompleteApi! }, isStatic: false, plugins });
+
+  // const embeddableRef = autoCompleteRefs.find(ref => ref.reference.plugin === 'embeddable');
+
+  // expect(embeddableRef).toBeUndefined();
 });

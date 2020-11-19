@@ -201,7 +201,7 @@ function addApiFromNode(
         type: m.getKindName(),
         isStatic: false,
         id,
-        node,
+        node: m,
         lifeCycle
       };
     });

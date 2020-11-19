@@ -1,11 +1,9 @@
 import { ReferencedSymbol } from "ts-morph";
-import { getApiId } from "../api_crawler/get_api_id";
 import { SourceInfo } from "./source_info";
 import { BasicPluginInfo, getPluginForPath } from "../plugin_utils";
 import { getRelativeKibanaPath } from "../utils";
 import { ReferenceDoc } from "./reference_doc";
 import { Api } from "../api_utils";
-import { apiIndexName } from "../api_crawler/config";
 
 interface Opts {
   referencesForApi: ReferencedSymbol[],
