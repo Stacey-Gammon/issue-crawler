@@ -6,7 +6,7 @@ before_script:
 jobs:
   include:
     - stage: test
-      script: yarn test build/*
+      script: yarn testBuild
     - stage: refs
       script: yarn crawlStaticRefs public/index.ts
     -
