@@ -21,9 +21,8 @@ export async function crawlStaticReferences() {
 
   try {
     for (const date of getCheckoutDates()) {
-      await checkoutRoundedDate(repoPath, currentGit, date);
+      const commitHash = await checkoutRoundedDate(repoPath, currentGit, date);
       const commitDate = await getCommitDate(currentGit);
-      const commitHash = await getCommitHash(currentGit);
 
       await collectReferences(
         client,
