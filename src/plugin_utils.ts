@@ -147,10 +147,15 @@ export function fillPluginInfo<T extends BasicPluginInfo>(
   inCodeOwnersFile: boolean = false,
   getPluginInfo: (info: BasicPluginInfo) => T) {
 
-  if (path.indexOf('src/core') >= 0) {
+  const indexOfSrcCore = path.indexOf('src/core'); 
+  // Why < 4? Because some deeply nested paths have "src/core" in them that aren't actually
+  // inside the top level "src/core" folder and this resulted in ops team being marked the owner
+  // of all platform areas.
+  if (indexOfSrcCore >= 0 && indexOfSrcCore < 4) {
     if (plugins.find(p => p.name === 'core')) {
       return;
     }
+    console.log('team owner of core marked as ' + teamOwner + ' because of file '+ path);
     path = '/src/core/';
   } 
 
