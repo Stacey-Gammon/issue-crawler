@@ -180,7 +180,7 @@ export function fillPluginInfo<T extends BasicPluginInfo>(
       return;
     }
     console.log('team owner of core marked as ' + teamOwner + ' because of file '+ path);
-    path = 'src/core';
+    path = '/src/core';
   }
 
   try {
@@ -190,9 +190,11 @@ export function fillPluginInfo<T extends BasicPluginInfo>(
       if (isPlugin && !path.includes('plugin_functional') && !path.includes('/test/') && !path.includes('__fixtures__')) {
         const hasReadme = readmeExists(dirPrefix + path + '/README.asciidoc');
         const name = getPluginNameFromPath(path)
+        console.log('Plugin name is ' + name);
 
         // There can be multiple lines in code owners that maps to the same plugin. Skip dups.
         if (plugins.find(p => p.name === name)) {
+          console.log('Plugin named ' + name + ' already  exists');
           return;
         }
 
@@ -204,6 +206,8 @@ export function fillPluginInfo<T extends BasicPluginInfo>(
           fillPluginInfo(filePath, dirPrefix, teamOwner, plugins, inCodeOwnersFile, getPluginInfo);
         }
       }
+    } else {
+      console.log(dirPrefix + path + ' is not a directory');
     }
   } catch (e) {
     if (inCodeOwnersFile && path.indexOf('*') < 0) { console.warn(path + ' does not exist'); }

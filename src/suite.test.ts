@@ -13,12 +13,11 @@ beforeAll(async () =>{
   repoPath = (await checkoutRepo('elastic/kibana', process.env.LOCAL_REPO_DIR)).repoPath;
   project = new Project({ tsConfigFilePath: `${repoPath}/x-pack/tsconfig.json` });
   plugins = getPluginInfoForRepo(repoPath);
-  console.log('plugins are', plugins);
   sourceFiles = project.getSourceFiles();
 });
 
 it('src/core assigned right owner', () => {
-  const plugin = getPluginForPath('src/core', plugins);
+  const plugin = getPluginForPath('/src/core', plugins);
   expect(plugin).toBeDefined();
   expect(plugin?.teamOwner).toBe('kibana-core');
 })
