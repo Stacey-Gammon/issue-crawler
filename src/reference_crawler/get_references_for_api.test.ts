@@ -5,6 +5,8 @@ import { getPluginInfoForRepo } from '../plugin_utils';
 import { getReferencesForApi } from './get_references_for_api';
 
 it('getReferencesForApi', async () => {
+  jest.setTimeout(60000*5);
+
   const { repoPath } = await checkoutRepo('elastic/kibana', process.env.LOCAL_REPO_DIR);
 
   const project = new Project({ tsConfigFilePath: `${repoPath}/x-pack/tsconfig.json` });

@@ -19,14 +19,6 @@ interface Opts {
 
 /**
  * Add all references for the given node into refs.
- * 
- * @param nodeRefs
- * @param name 
- * @param sourceInfo 
- * @param plugins 
- * @param refs 
- * @param isStatic 
- * @param lifecycle 
  */
 export function addExportReferences({
     referencesForApi,
@@ -55,7 +47,7 @@ export function addExportReferences({
             file: { path: getRelativeKibanaPath(sourceInfo.sourceFile) },
             isStatic,
             lifecycle: api.lifeCycle,
-            name,
+            name: api.name,
             xpack: sourceInfo.sourceFile.indexOf("x-pack") >= 0
           },
           reference: {
