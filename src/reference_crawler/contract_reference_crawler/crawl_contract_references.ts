@@ -59,5 +59,5 @@ export async function collectReferences(
   const apis = getContractApi(project, files, plugins);
   console.log(`Collecting references from ${files.length} files...`);
 
-  indexApiReferences(client, apis, commitHash, commitDate, indexAsLatest, plugins);
+  indexApiReferences(client, apis, commitHash, commitDate, indexAsLatest, false, plugins);
 }
