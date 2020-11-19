@@ -41,7 +41,6 @@ export async function mapResponses<Request, ResponseData>(
 	let page = 1;
 	while(shouldCheckNextPage) {
 		const response = await doQuery({ ...request, page });
-		response.data[1]
 		await Promise.all(response.data.map(async data => await callback(data)));
 		shouldCheckNextPage = !test && !!(response.headers.link && response.headers.link.includes('rel="next"'));
 		logRateLimit(response, 'mapResponses');

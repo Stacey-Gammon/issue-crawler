@@ -1,17 +1,13 @@
 
 
-import { extractValues, extractValue, findLabel, extractVersionNumber } from './utils';
+import { extractValues, extractValue, findLabel, extractVersionNumber } from '../utils';
 
 import moment from 'moment';
 import { IssuesListForRepoResponseData } from '@octokit/types';
-import { ProjectInfo } from './projects';
+import { ProjectInfo } from './get_projects';
+import { EnhancedDate, IssueDoc, ReleaseStatus } from './issue_doc';
+import { extractReleaseStatus } from './extract_release_status';
 
-type EnhancedDate = {
-  time: string;
-  weekday: string;
-  weekday_number: number;
-  hour_of_day: number;
-}
 
 /**
  * Enhace a passed in date, into an object that contains further useful
@@ -29,49 +25,6 @@ function enhanceDate(date: string): EnhancedDate | undefined {
 	};
 }
 
-export interface KibanaIssue {
-  priority_num: number;
-  is_team_dependency: boolean;
-  is_project_dependency: boolean;
-  is_internal_request: boolean;
-  needed_for: Array<string>;
-  priority?: string;
-  teams: Array<string>;
-  features: Array<string>;
-  loe?: string;
-  id: string;
-  projects: Array<string>;
-  project_board?: string;
-  stage?: string;
-  order?: number;
-  release_target?: string;
-  original_release_target?: string;
-  previous_release_target?: string;
-  release_status: "Done" | "In progress" | "Not started";
-  for_release_status: boolean;
-  in_progress: boolean;
-  is_prioritized: boolean;
-  is_tech_debt: boolean;
-  last_crawled_at: number;
-  owner: string;
-  repo: string;
-  state: string;
-  title: string;
-  // Issue number. "Id" above is not the issue number.
-  number: number;
-  url: string;
-  comment_count: number;
-  created_at?: EnhancedDate;
-  updated_at?: EnhancedDate;
-  closed_at?: EnhancedDate;
-  user: string;
-  body: string;
-  labels: Array<string>;
-  is_pullrequest: boolean;
-  assignees: Array<string>,
-  time_to_fix?: number,
-} 
-
 /**
  * Takes in the raw issue from the GitHub API response and must return the
  * object that should be stored inside Elasticsearch.
@@ -80,7 +33,7 @@ export function convertIssue(
     owner: string,
     repo: string,
     raw: IssuesListForRepoResponseData[0],
-    issuesToProjects: { [key: string]: Array<ProjectInfo> }): Array<KibanaIssue> {
+    issuesToProjects: { [key: string]: Array<ProjectInfo> }): Array<IssueDoc> {
 	const time_to_fix = (raw.created_at && raw.closed_at) ?
 			moment(raw.closed_at).diff(moment(raw.created_at)) :
 			undefined;
@@ -110,6 +63,9 @@ export function convertIssue(
 		priority_num = 4;
 	}
   const id = raw.number + '';
+
+  // Placeholder for issues that don't belong to any project broad, we will
+  // need to leave these values undefined.
   if (issuesToProjects[id] === undefined) {
     issuesToProjects[id] = [
       {
@@ -120,38 +76,29 @@ export function convertIssue(
     ]; 
   }
 
-  console.log('issuesToProjects[id] is ', issuesToProjects[id]);
-
-  const issues: Array<KibanaIssue> = [];
+  const issues: Array<IssueDoc> = [];
   issuesToProjects[id].forEach(projectBoard => {
 
-      const stage = projectBoard.stage;
-      const release_target = extractVersionNumber(stage);
+      const project_board_column = projectBoard.stage;
+      const release_target = extractVersionNumber(project_board_column);
+      const release_status = extractReleaseStatus(raw, projectBoard);
 
-
-      let release_status: "Not started" | "In progress" | "Done" = 'Not started';
-      if (assignees.length > 0 && state === 'open') {
-        release_status = 'In progress';
-      } else if (state === 'closed') {
-        release_status = 'Done';
-      } 
-
-      const issue: KibanaIssue = {
+      const issue: IssueDoc = {
         loe,
         id: raw.id + 'p' + projectBoard.name,
         priority_num,
         projects,
         project_board: projectBoard.name,
-        stage,
+        project_board_column,
         original_release_target: release_target,
         release_target,
-        order: projectBoard.order,
+        project_board_column_order: projectBoard.order,
         features,
         priority,
         teams,
-        release_status,
+        release_status: extractReleaseStatus(raw, projectBoard),
         for_release_status,
-        in_progress: assignees.length > 0 && state === 'open',
+        in_progress: release_status === ReleaseStatus.IN_PROGRESS,
         is_team_dependency,
         is_prioritized: priority !== undefined && priority !== '',
         is_project_dependency,
@@ -184,5 +131,3 @@ export function convertIssue(
   });
   return issues
 }
-
-module.exports = { convertIssue }

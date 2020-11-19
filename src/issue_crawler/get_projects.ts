@@ -1,7 +1,7 @@
 import { Octokit } from "@octokit/rest";
 
 
-import { mapResponses, extractIssueNumber, logRateLimit } from './utils';
+import { mapResponses, extractIssueNumber, logRateLimit } from '../utils';
 import { ProjectsListForOrgResponseData, ProjectsListForRepoResponseData } from "@octokit/types";
 
 export interface IssueProjectInfo {
@@ -52,12 +52,12 @@ type ProjectEntry = {
 
 type ProjectMapping = Record<string, ProjectEntry>;
 
-
 async function getCards(
     octokit: Octokit,
     columnId: number,
     project: ProjectEntry,
     issues: Record<string, Array<IssueProjectInfo>>) {
+  console.log(`Getting cards for ${project.name}.${columnId}`);
   const response = await octokit.projects.listCards({
     column_id: columnId,
     archived_state: 'not_archived'
@@ -86,13 +86,21 @@ async function getCards(
 }
 
 async function getColumns(octokit: Octokit, projectId: number, projects: ProjectMapping, issues: Record<string, Array<IssueProjectInfo>>) {
-  console.log('getColumns for project ' + projects[projectId].name);
+  console.log(`Getting columns for project ${projectId} with name ${projects[projectId].name}`);
+
+  // A github delay to avoid getting booted out from security concerns.
   await new Promise(resolve => setTimeout(resolve, 3000));
+ 
   const response = await octokit.projects.listColumns({
     project_id: projectId,
   });
   logRateLimit(response, 'getColumns');
   await Promise.all(response.data.map(async (column) => {
+    if (projects[projectId].columns[column.id]) {
+      console.log(`WARN: cards for column ${column.id} already retrieved.`);
+      return;
+    }
+
     projects[projectId].columns[column.id] = {
       id: column.id + '',
       name: column.name,
@@ -104,24 +112,40 @@ async function getColumns(octokit: Octokit, projectId: number, projects: Project
   }));
 }
 
-export async function getProjects(
+export async function getProjectsForRepo(
     octokit: Octokit,
-    owner: string,
-    repo: string,
-    issues: Record<string, Array<IssueProjectInfo>>,
-    test: boolean) {
+    opts: {
+      owner: string,
+      repo: string,
+      issues: Record<string, Array<IssueProjectInfo>>,
+      test: boolean
+    }) {
+  const { repo, owner, issues } = opts;
+  console.log(`Getting projects for repo ${repo}`);
+
   const projects: ProjectMapping = {};
   await new Promise(resolve => setTimeout(resolve, 3000));
 
-	await mapResponses<ProjectsForOrgRequest, ProjectsListForOrgResponseData[1]>({
-    org: 'elastic',
+	await mapResponses<ProjectsForRepoRequest, ProjectsListForRepoResponseData[1]>({
+    repo,
     per_page: 5,
     state: 'open',
     sort: 'created',
+    owner,
     direction: 'desc',
+    ...(repo ? { repo } : {})
   },
-  async (request: ProjectsForOrgRequest) => await octokit.projects.listForOrg(request),
+  async (request: ProjectsForRepoRequest) => {
+    return await octokit.projects.listForRepo(request)
+  },
   async (project) => {
+    console.log(`Creating project ${project.id} with name ${project.name}`);
+
+    if (projects[project.id]) {
+      console.log(`WARN: project ${project.id} already retrieved.`);
+      return;
+    }
+
     if (project.name.search("Kibana") >= 0) {
       projects[project.id] = {
         id: project.id + '',
@@ -130,8 +154,7 @@ export async function getProjects(
       };
       await getColumns(octokit, project.id, projects, issues);
     }
-  }
-);
+  });
 
 	await mapResponses<ProjectsForRepoRequest, ProjectsListForRepoResponseData[0]>({
       owner,
@@ -143,14 +166,58 @@ export async function getProjects(
     },
     async (request) => await octokit.projects.listForRepo(request),
     async (project) => {
+      if (projects[project.id]) {
+        console.log(`WARN: columns for project ${project.id} already retrieved.`);
+        return;
+      }
+
       projects[project.id] = {
         id: project.id + '',
         name: project.name,
         columns: {}
       };
       await getColumns(octokit, project.id, projects, issues);
-    }, 
-    test
+    },
   );
   return projects;
+}
+
+export async function getProjectsForOrg(
+  octokit: Octokit,
+  opts: {
+    issues: Record<string, Array<IssueProjectInfo>>,
+    test: boolean
+  }) {
+  console.log(`Getting projects for elastic org`);
+
+  const projects: ProjectMapping = {};
+  await new Promise(resolve => setTimeout(resolve, 3000));
+
+  await mapResponses<ProjectsForOrgRequest, ProjectsListForOrgResponseData[1]>({
+    org: 'elastic',
+    per_page: 5,
+    state: 'open',
+    sort: 'created',
+    direction: 'desc',
+  },
+  async (request: ProjectsForOrgRequest) => {
+    return await octokit.projects.listForOrg(request)
+  },
+  async (project) => {
+    console.log(`Creating project ${project.id} with name ${project.name}`);
+
+    if (projects[project.id]) {
+      console.log(`WARN: project ${project.id} already retrieved.`);
+      return;
+    }
+
+    if (project.name.search("Kibana") >= 0) {
+      projects[project.id] = {
+        id: project.id + '',
+        name: project.name,
+        columns: {}
+      };
+      await getColumns(octokit, project.id, projects, opts.issues);
+    }
+  });
 }
