@@ -12,6 +12,7 @@ export async function indexApiReferences(
   commitHash: string,
   commitDate: string,
   indexAsLatest: boolean,
+  isStatic: boolean,
   plugins: Array<BasicPluginInfo>) {
   const refs: { [key: string]: ReferenceDoc } = {};
   const apiArray = Object.values(apis);
@@ -25,7 +26,7 @@ export async function indexApiReferences(
         publicOrServer: getPublicOrServer(api.file.path), 
         sourceFile: api.file.path 
       }
-      addExportReferences(api.node.findReferences(), api.name, sourceInfo, plugins, refs, false);
+      addExportReferences(api.node.findReferences(), api.name, sourceInfo, plugins, refs, isStatic);
       console.log(`Collected ${Object.values(refs).length} references...`);
     } else {
       console.log('WARN');
