@@ -5,7 +5,7 @@ import { addExportReferences } from './add_export_references';
 import { ReferenceDoc } from './reference_doc';
 
 interface GetReferencesForApiOpts {
-  apis: { [key: string]: Api },
+  apis: Array<Api>,
   isStatic: boolean,
   plugins: Array<BasicPluginInfo>
 }
@@ -15,9 +15,7 @@ export function getReferencesForApi({
   isStatic,
   plugins}: GetReferencesForApiOpts): Array<ReferenceDoc> {
   const refs: { [key: string]: ReferenceDoc } = {};
-  const apiArray = Object.values(apis);
-  apis = {}; // Travis ci is having js memory issues. See if this will help. Could be the node references??
-  apiArray.forEach(api => {
+  apis.forEach(api => {
     const sourcePlugin = getPluginForPath(api.file.path, plugins);
 
     if (sourcePlugin !== undefined) {

@@ -60,7 +60,7 @@ export async function collectReferences(
   const apis = getStaticApi(staticFiles, plugins);
   console.log(`Collecting references from ${staticFiles.length} files...`);
 
-  const refs = getReferencesForApi({ apis,isStatic: true, plugins });
+  const refs = getReferencesForApi({ apis: Object.values(apis), isStatic: true, plugins });
 
   await indexRefDocs(client, commitHash, commitDate, Object.values(refs), indexAsLatest);
 }

@@ -165,6 +165,11 @@ export function fillPluginInfo<T extends BasicPluginInfo>(
   plugins: Array<T> = [],
   inCodeOwnersFile: boolean = false,
   getPluginInfo: (info: BasicPluginInfo) => T) {
+  // Any files in our CODEOWNERS file that will get tagged as the plugin "core" need to be
+  // removed or it throws off the real "plugin" we want to be named core.
+  if (path.indexOf('__fixtures__/mock_repo') >= 0 || path.indexOf('kbn-i18n/src/core') >= 0) {
+    return;
+  }
 
   const indexOfSrcCore = path.indexOf('src/core'); 
   // Why < 4? Because some deeply nested paths have "src/core" in them that aren't actually
@@ -175,14 +180,14 @@ export function fillPluginInfo<T extends BasicPluginInfo>(
       return;
     }
     console.log('team owner of core marked as ' + teamOwner + ' because of file '+ path);
-    path = 'src/core/';
-  } 
+    path = 'src/core';
+  }
 
   try {
     const stats = fs.statSync(dirPrefix + path);
     if (stats.isDirectory()) {
       const isPlugin = fs.existsSync(dirPrefix + path + '/kibana.json') || path.indexOf('src/core') >= 0;
-      if (isPlugin && !path.includes('plugin_functional') && !path.includes('/test/')) {
+      if (isPlugin && !path.includes('plugin_functional') && !path.includes('/test/') && !path.includes('__fixtures__')) {
         const hasReadme = readmeExists(dirPrefix + path + '/README.asciidoc');
         const name = getPluginNameFromPath(path)
 
