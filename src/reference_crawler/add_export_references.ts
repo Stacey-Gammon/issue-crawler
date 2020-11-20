@@ -11,7 +11,6 @@ interface Opts {
   sourceInfo: SourceInfo,
   plugins: Array<BasicPluginInfo>,
   allReferences: { [key: string]: ReferenceDoc },
-  isStatic: boolean,
   lifeCycle?: string
 }
 
@@ -23,8 +22,7 @@ export function addExportReferences({
     api,
     sourceInfo,
     plugins,
-    allReferences,
-    isStatic
+    allReferences
   }: Opts): number {
   let refCnt = 0;
   referencesForApi.forEach(node => {
@@ -37,13 +35,16 @@ export function addExportReferences({
       const refPlugin = getPluginForPath(ref.getSourceFile().getFilePath(), plugins);
       if (refPlugin && refPlugin.name !== sourceInfo.sourcePlugin.name) {
         refCnt++;
+        if (api.id === 'core.public.setup.application') {
+          console.log('adding Ref for core.public.setup.application');
+        }
         allReferences[docId] = ({
           source: {
             id: api.id,
             plugin: sourceInfo.sourcePlugin.name,
             team: sourceInfo.sourcePlugin.teamOwner,
             file: { path: getRelativeKibanaPath(sourceInfo.sourceFile) },
-            isStatic,
+            isStatic: api.isStatic,
             lifecycle: api.lifeCycle,
             name: api.name,
             xpack: sourceInfo.sourceFile.indexOf("x-pack") >= 0

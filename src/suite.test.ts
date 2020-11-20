@@ -31,7 +31,7 @@ it('getReferencesForApi explicit', async () => {
 
   const searchApi = Object.values(apis).find(api => api.id === 'data.public.start.search');
 
-  const searchRefs = getReferencesForApi({ apis: [searchApi!], isStatic: false, plugins });
+  const searchRefs = getReferencesForApi({ apis: [searchApi!], plugins });
 
   // Last checked it was 33 references. If it goes below 20, something might be wrong!
   expect(searchRefs.length).toBeGreaterThan(20);

@@ -1,4 +1,4 @@
-import { MethodDeclaration, Node, Project, ReferencedSymbol, SourceFile, SyntaxKind, Type } from "ts-morph";
+import { ClassDeclaration, MethodDeclaration, Node, Project, ReferencedSymbol, SourceFile, SyntaxKind, Type } from "ts-morph";
 import { getApiId } from "./api_crawler/get_api_id";
 import { BasicPluginInfo, getPluginForNestedPath, getPluginForPath, getPluginNameFromPath, readmeExists } from "./plugin_utils";
 import { getPublicOrServer } from "./utils";
@@ -193,6 +193,8 @@ function addApiFromNode(
     console.log(`Getting ${properties.length} api properties for node ${identifer}`);
     properties.forEach(m => {
       const id = getApiId({ plugin: plugin.name, lifeCycle, publicOrServer, name: m.getName() });
+
+    console.log(`Adding ${id} for node ${identifer}`);
       apis[id] = {
         plugin: plugin.name,
         file: { path: file },
@@ -219,7 +221,6 @@ function addRefsForPromiseType(
   });
 }
 
-
 export async function addStaticApis(
   source: SourceFile,
   plugin: BasicPluginInfo,
@@ -237,17 +238,24 @@ export async function addStaticApis(
       }
 
       if (name && name !== '') {
-        const id = getApiId({ plugin: plugin.name, publicOrServer, name })
-        apis[id] = {
-          plugin: plugin.name,
-          file: { path: source.getFilePath() },
-          name,
-          team: plugin.teamOwner,
-          type: ed.getKindName(),
-          isStatic: true,
-          id,
-          node: ed as any
-        };
+
+        // We need to do special handling to capture the core contract api and dig into these
+        // exports further.
+        if (plugin.name === 'core' && (name === 'CoreSetup' || name === 'CoreStart')) {
+          addApiFromNode(ed, plugin, source.getFilePath(),  name === 'CoreSetup' ? 'setup' : 'start', apis);
+        } else {
+          const id = getApiId({ plugin: plugin.name, publicOrServer, name });
+          apis[id] = {
+            plugin: plugin.name,
+            file: { path: source.getFilePath() },
+            name,
+            team: plugin.teamOwner,
+            type: ed.getKindName(),
+            isStatic: true,
+            id,
+            node: ed as any
+          };
+        }
       }
     });
   });

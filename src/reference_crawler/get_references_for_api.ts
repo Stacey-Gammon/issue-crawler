@@ -6,13 +6,11 @@ import { ReferenceDoc } from './reference_doc';
 
 interface GetReferencesForApiOpts {
   apis: Array<Api>,
-  isStatic: boolean,
   plugins: Array<BasicPluginInfo>
 }
 
 export function getReferencesForApi({
   apis,
-  isStatic,
   plugins}: GetReferencesForApiOpts): Array<ReferenceDoc> {
   const refs: { [key: string]: ReferenceDoc } = {};
   apis.forEach(api => {
@@ -24,7 +22,7 @@ export function getReferencesForApi({
         publicOrServer: getPublicOrServer(api.file.path), 
         sourceFile: api.file.path 
       }
-      addExportReferences({ referencesForApi: api.node.findReferences(), api, sourceInfo, plugins, allReferences: refs, isStatic });
+      addExportReferences({ referencesForApi: api.node.findReferences(), api, sourceInfo, plugins, allReferences: refs });
       console.log(`Collected ${Object.values(refs).length} references...`);
     } else {
       console.log('WARN');
