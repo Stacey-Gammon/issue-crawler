@@ -36,6 +36,9 @@ it('getRelativeKibanaPath', () => {
 
   relativePath = getRelativeKibanaPath('/tmp/tmp-5631-rv2QP2a7ISWH/src/plugins/server/authorization/ui');
   expect(relativePath).toBe('src/plugins/server/authorization/ui');
+
+  relativePath = getRelativeKibanaPath('/tmp/tmp-5631-rv2QP2a7ISWH/examples/test/');
+  expect(relativePath).toBe('examples/test');
 })
 
 it('getPluginFromPath', () => {

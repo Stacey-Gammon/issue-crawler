@@ -34,24 +34,31 @@ it('src/core assigned right owner', () => {
   expect(plugin?.teamOwner).toBe('kibana-core');
 })
 
-// it('getReferencesForApi explicit', async () => {
-//   jest.setTimeout(60000*5);
+it('getReferencesForApi explicit', async () => {
+  jest.setTimeout(60000 * 5);
 
-//   const files: Array<SourceFile> = sourceFiles.filter((v, i) => (v.getFilePath().indexOf('data/public/plugin.ts') >= 0));
+  const files: Array<SourceFile> = sourceFiles.filter((v, i) => (v.getFilePath().indexOf('data/public/plugin.ts') >= 0));
   
-//   const apis = getContractApi(project, files, plugins);
+  const apis = getContractApi(project, files, plugins);
 
-//   const searchApi = Object.values(apis).find(api => api.id === 'data.public.start.search');
+  const searchApi = Object.values(apis).find(api => api.id === 'data.public.start.search');
 
-//   const searchRefs = getReferencesForApi({ apis: [searchApi!], plugins });
+  const searchRefs = getReferencesForApi({ apis: [searchApi!], plugins });
 
-//   // Last checked it was 33 references. If it goes below 20, something might be wrong!
-//   expect(searchRefs.length).toBeGreaterThan(20);
+  // Last checked it was 33 references. If it goes below 20, something might be wrong!
+  expect(searchRefs.length).toBeGreaterThan(20);
 
-//   const embeddableRef = searchRefs.find(ref => ref.reference.plugin === 'embeddable');
+  const embeddableRef = searchRefs.find(ref => ref.reference.plugin === 'embeddable');
 
-//   expect(embeddableRef).toBeUndefined();
-// });
+  expect(embeddableRef).toBeUndefined();
+
+  const discoverRef = searchRefs.find(ref => ref.reference.plugin === 'discover');
+
+  expect(discoverRef).toBeDefined();
+
+  // Make sure the full path is being stripped away, and it's just the relative path.
+  expect(discoverRef?.reference.file.path.indexOf('src/plugins/discover')).toBe(0);
+});
 
 it('getApi for "core" plugin', async () => {
   jest.setTimeout(60000*2);
