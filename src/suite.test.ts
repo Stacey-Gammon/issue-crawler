@@ -70,6 +70,7 @@ it('getApi for "core" plugin', async () => {
 
   const refCnt = await getRefCnt(client, `core.public.start.application`, commitHash);
 
+  console.log('Hash is ' + commitHash);
   expect(refCnt).toBeGreaterThan(0);
 });
 

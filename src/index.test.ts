@@ -37,7 +37,7 @@ it('getRelativeKibanaPath', () => {
   relativePath = getRelativeKibanaPath('/tmp/tmp-5631-rv2QP2a7ISWH/src/plugins/server/authorization/ui');
   expect(relativePath).toBe('src/plugins/server/authorization/ui');
 
-  relativePath = getRelativeKibanaPath('/tmp/tmp-5631-rv2QP2a7ISWH/examples/test/');
+  relativePath = getRelativeKibanaPath('/tmp/tmp-5631-rv2QP2a7ISWH/examples/test');
   expect(relativePath).toBe('examples/test');
 })
 
@@ -45,10 +45,3 @@ it('getPluginFromPath', () => {
   expect(getPluginFromPath('/Users/gammon/Elastic/kibana/src/core/f/a')).toBe('core');
   expect(getPluginFromPath('/Users/gammon/Elastic/kibana/x-pack/plugins/alerts/public/index.ts')).toBe('alerts');
 })
-
-// it('extractPluginName', () => { 
-//   expect(extractPluginNameAndPath('/x-pack/plugins/apm/asdjfklsa')!.pluginPath).toEqual('/x-pack/plugins/apm');
-//   expect(extractPluginNameAndPath('/x-pack/plugins/apm/asdjfklsa')!.pluginName).toEqual('apm');
-//   expect(extractPluginNameAndPath('/x-pack/plugins/apm')!.pluginName).toEqual('apm');
-//   expect(extractPluginNameAndPath('/x-pack/plugins/apm')!.pluginPath).toEqual('/x-pack/plugins/apm');
-// });

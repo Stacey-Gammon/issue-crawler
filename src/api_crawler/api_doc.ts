@@ -32,7 +32,13 @@ export const apiIndexMapping: Object = {
 
 export async function getApiDoc(client: elasticsearch.Client, api: Api, commitHash: string): Promise<ApiDoc> {
   return {
-    ...api,
+    id: api.id,
+    plugin: api.plugin,
+    file: api.file,
+    team: api.team,
+    type: api.type,
+    isStatic: api.isStatic,
+    name: api.name,
     refCount: await getRefCnt(client, api.id, commitHash),
     xpack: api.file.path.indexOf('xpack') >= 0
   };

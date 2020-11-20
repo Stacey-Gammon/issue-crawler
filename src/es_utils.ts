@@ -62,12 +62,14 @@ export async function indexDocs<Doc>(
       });
       if (response.errors) {
         console.log(`Encountered errors:`);
-        console.log(JSON.stringify(response));
+        console.log(response.errors);
+        process.exit(1);
       } else {
         console.log(`${group + 1}) Successfully indexed ${(body.length/2) * (group + 1)}/${docs.length} docs into ${indexName}.`);
       }
     } catch (e) {
       console.error(e);
+      process.exit(1);
     }
     group++;
   }
@@ -86,6 +88,7 @@ export async function createIndex(client: Client, repo: string, properties: Obje
   } catch (e) {
     if (e.statusCode != '400') {
       console.error(e);
+      process.exit(1);
     }
   }
 }
