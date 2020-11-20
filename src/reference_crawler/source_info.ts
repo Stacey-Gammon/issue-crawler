@@ -4,5 +4,5 @@ import { BasicPluginInfo } from "../plugin_utils";
 export interface SourceInfo {
   sourcePlugin: BasicPluginInfo;
   sourceFile: string;
-  publicOrServer: string;
+  publicOrServer: 'public' | 'server';
 }

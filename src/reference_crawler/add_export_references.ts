@@ -11,7 +11,7 @@ interface Opts {
   sourceInfo: SourceInfo,
   plugins: Array<BasicPluginInfo>,
   allReferences: { [key: string]: ReferenceDoc },
-  lifeCycle?: string
+  lifecycle?: string
 }
 
 /**
@@ -41,11 +41,12 @@ export function addExportReferences({
         allReferences[docId] = ({
           source: {
             id: api.id,
+            publicOrServer: sourceInfo.publicOrServer,
             plugin: sourceInfo.sourcePlugin.name,
             team: sourceInfo.sourcePlugin.teamOwner,
             file: { path: getRelativeKibanaPath(sourceInfo.sourceFile) },
             isStatic: api.isStatic,
-            lifecycle: api.lifeCycle,
+            lifecycle: api.lifecycle,
             name: api.name,
             xpack: sourceInfo.sourceFile.indexOf("x-pack") >= 0
           },

@@ -11,7 +11,7 @@ export interface ApiDoc {
   type: string;
   isStatic: boolean;
   xpack: boolean;
-  lifeCycle?: string;
+  lifecycle?: string;
 }
 
 export const apiIndexMapping: Object = {
@@ -24,7 +24,7 @@ export const apiIndexMapping: Object = {
   'refCount': { type: 'number' },
   'team': { type: 'keyword' },
   'plugin': { type: 'keyword' },
-  'lifeCycle': { type: 'keyword' },
+  'lifecycle': { type: 'keyword' },
   'commitHash': { type: 'keyword' },
   'commitDate': { type: 'date' }
 };

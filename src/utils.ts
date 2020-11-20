@@ -74,6 +74,6 @@ export function getRelativeKibanaPath(fullPath: string): string {
 	return fullPath;
 }
 
-export function getPublicOrServer(path: string) {
+export function getPublicOrServer(path: string): 'public' | 'server' {
   return path.indexOf('/public/') >= 0 ? 'public' : 'server';
 }

@@ -12,13 +12,13 @@ export interface Api {
   name: string;
   node: { findReferences: () => ReferencedSymbol[] }
   team: string,
-  lifeCycle?: string;
+  lifecycle?: string;
 }
 
 export interface ImplicitApiOpts {
   returnType: Type;
   file: string;
-  lifeCycle: string;
+  lifecycle: string;
   apis: { [key: string]: Api }
   plugin: BasicPluginInfo;
 }
@@ -92,7 +92,7 @@ async function collectApiInfoForFiles(
   return apis;
 }
 
-function addImplicitApi({ file, returnType, plugin, lifeCycle, apis }: ImplicitApiOpts) {
+function addImplicitApi({ file, returnType, plugin, lifecycle, apis }: ImplicitApiOpts) {
   try {
     const publicOrServer = getPublicOrServer(file);
     returnType.getProperties().forEach(p => {
@@ -111,7 +111,7 @@ function addImplicitApi({ file, returnType, plugin, lifeCycle, apis }: ImplicitA
             console.warn('WARN: Not ingesting empty tag. Information may be lost.');
             return;
           }
-          const id = getApiId({ plugin: plugin.name, publicOrServer, lifeCycle, name: pa.getName()});
+          const id = getApiId({ plugin: plugin.name, publicOrServer, lifecycle, name: pa.getName()});
           apis[id] = {
             plugin: plugin.name,
             file: { path: file },
@@ -121,7 +121,7 @@ function addImplicitApi({ file, returnType, plugin, lifeCycle, apis }: ImplicitA
             isStatic: false,
             id,
             node: pa,
-            lifeCycle
+            lifecycle
           };
         } else {
           console.log(`p name: ${p.getName()} declaration of kind ${d.getKindName()}`, d.getText());
@@ -141,8 +141,8 @@ export function addContractApis(
   const file = source.getFilePath();
   source.getClasses().forEach(c => {
     c.getMethods().forEach(m => {
-      const lifeCycle = m.getName();
-      if (lifeCycle === 'setup' || lifeCycle === 'start') {
+      const lifecycle = m.getName();
+      if (lifecycle === 'setup' || lifecycle === 'start') {
         const ret = m.getReturnTypeNode();
         if (ret) {
           project.getLanguageService().getDefinitions(ret).forEach(d => {
@@ -150,9 +150,9 @@ export function addContractApis(
             if (decNode) {
               // Promise has to be handled a bit differently.
               if (Node.isInterfaceDeclaration(decNode) && decNode.getName() === 'Promise') {
-                addRefsForPromiseType(ret.getType().getTypeArguments(), plugin, file, lifeCycle, apis);
+                addRefsForPromiseType(ret.getType().getTypeArguments(), plugin, file, lifecycle, apis);
                } else {
-                addApiFromNode(decNode, plugin, file, lifeCycle, apis);
+                addApiFromNode(decNode, plugin, file, lifecycle, apis);
               }
             }
           });
@@ -160,14 +160,14 @@ export function addContractApis(
           const typeText = m.getReturnType().getText().trim();
           const symbolName = m.getReturnType().getSymbol()?.getName();
           if (symbolName && symbolName === 'Promise') {
-            addRefsForPromiseType(m.getReturnType().getTypeArguments(), plugin, file, lifeCycle, apis);
+            addRefsForPromiseType(m.getReturnType().getTypeArguments(), plugin, file, lifecycle, apis);
             return;
           }
           if (typeText !== '{}' &&
               typeText !== 'Promise<void>' &&
               typeText !== 'Promise<{}>' &&
               typeText !== 'void') {
-            addImplicitApi({ returnType: m.getReturnType(), plugin, file, lifeCycle, apis });
+            addImplicitApi({ returnType: m.getReturnType(), plugin, file, lifecycle, apis });
           }
         }
       }
@@ -179,10 +179,10 @@ function addApiFromNode(
   node: Node,
   plugin: BasicPluginInfo,
   file: string,
-  lifeCycle: string,
+  lifecycle: string,
   apis: { [key: string]: Api }) {
   const publicOrServer = getPublicOrServer(file);
-  const identifer = `${plugin.name}.${publicOrServer}.${lifeCycle}`;  
+  const identifer = `${plugin.name}.${publicOrServer}.${lifecycle}`;  
   if (Node.isInterfaceDeclaration(node)) {
     if (node.getName() === 'Promise') {
       console.warn(`${identifer} return type is a Promise. Is information being lost? Text is`, node.getText());
@@ -192,7 +192,7 @@ function addApiFromNode(
     const properties = node.getProperties();
     console.log(`Getting ${properties.length} api properties for node ${identifer}`);
     properties.forEach(m => {
-      const id = getApiId({ plugin: plugin.name, lifeCycle, publicOrServer, name: m.getName() });
+      const id = getApiId({ plugin: plugin.name, lifecycle, publicOrServer, name: m.getName() });
 
     console.log(`Adding ${id} for node ${identifer}`);
       apis[id] = {
@@ -204,7 +204,7 @@ function addApiFromNode(
         isStatic: false,
         id,
         node: m,
-        lifeCycle
+        lifecycle
       };
     });
   }
@@ -214,10 +214,10 @@ function addRefsForPromiseType(
   typeArgs: Type[],
   plugin: BasicPluginInfo,
   file: string,
-  lifeCycle: string,
+  lifecycle: string,
   apis: { [key: string]: Api }) {
   typeArgs.forEach(tp => {
-    addImplicitApi({ file, returnType: tp, plugin, lifeCycle, apis});
+    addImplicitApi({ file, returnType: tp, plugin, lifecycle, apis});
   });
 }
 
