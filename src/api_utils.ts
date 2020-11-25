@@ -13,12 +13,15 @@ export interface Api {
   node: { findReferences: () => ReferencedSymbol[] }
   team: string,
   lifecycle?: string;
+  publicOrServer: 'public' | 'server';
 }
 
 export function getTsProject(repoPath: string) {
   const xpackTsConfig = `${repoPath}/x-pack/tsconfig.json`;
   const project = new Project({ tsConfigFilePath: xpackTsConfig });
   project.addSourceFilesAtPaths(`${repoPath}/examples/**/*{.d.ts,.ts}`);
+  project.addSourceFilesAtPaths(`${repoPath}/src/plugins/**/*{.d.ts,.ts}`);
+  project.addSourceFilesAtPaths(`${repoPath}/x-pack/plugins/**/*{.d.ts,.ts}`);
   project.resolveSourceFileDependencies();
   return project;
 }
@@ -131,7 +134,8 @@ function addImplicitApi({ file, returnType, plugin, lifecycle, apis, project }: 
             isStatic: false,
             id,
             node: pa,
-            lifecycle
+            lifecycle,
+            publicOrServer: getPublicOrServer(file)
           };
         } else {
           console.log(`p name: ${p.getName()} declaration of kind ${d.getKindName()}`, d.getText());
@@ -191,7 +195,8 @@ function addApiFromNode(
         isStatic: false,
         id,
         node: m,
-        lifecycle
+        lifecycle,
+        publicOrServer: getPublicOrServer(file),
       };
     });
   }
@@ -241,7 +246,8 @@ export async function addStaticApis(
             type: ed.getKindName(),
             isStatic: true,
             id,
-            node: ed as any
+            node: ed as any,
+            publicOrServer: getPublicOrServer(source.getFilePath())
           };
         }
       }
