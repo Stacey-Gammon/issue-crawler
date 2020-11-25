@@ -7,7 +7,7 @@ import { createIndex } from "../../es_utils";
 import { getCheckoutDates, repo } from "../config";
 import { checkoutRepo, checkoutRoundedDate, getCommitDate } from "../../git_utils";
 import { Project, SourceFile } from 'ts-morph';
-import { getContractApi } from '../../api_utils';
+import { getContractApi, getTsProject } from '../../api_utils';
 import { indexRefDocs } from '../index_references';
 import { getReferencesForApi } from '../get_references_for_api';
 
@@ -31,7 +31,6 @@ export async function crawlContractReferences({ fileFilters }: CrawlContractRefe
       await collectReferences({
         client,
         repoPath,
-        tsConfigFilePath: `${repoPath}/x-pack/tsconfig.json`,
         commitHash,
         commitDate,
         fileFilters,
@@ -45,7 +44,6 @@ export async function crawlContractReferences({ fileFilters }: CrawlContractRefe
 interface CollectContractReferencesOps {
   client: elasticsearch.Client,
   repoPath: string,
-  tsConfigFilePath: string,
   commitHash: string,
   commitDate: string,
   indexAsLatest: boolean;
@@ -55,12 +53,11 @@ interface CollectContractReferencesOps {
 export async function collectReferences({
   client,
   repoPath,
-  tsConfigFilePath,
   commitHash,
   commitDate,
   fileFilters,
   indexAsLatest }: CollectContractReferencesOps) {
-  const project = new Project({ tsConfigFilePath });
+  const project = getTsProject(repoPath);
   const plugins = getPluginInfoForRepo(repoPath);
 
   const sourceFiles = project.getSourceFiles();

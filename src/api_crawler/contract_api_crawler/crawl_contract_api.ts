@@ -8,7 +8,7 @@ import { createIndex, getIndexName } from "../../es_utils";
 import { checkoutDates, repo } from "../config";
 import { checkoutRepo, checkoutRoundedDate, getCommitDate, getCommitHash } from "../../git_utils";
 import { Project, SourceFile } from 'ts-morph';
-import { getContractApi } from '../../api_utils';
+import { getContractApi, getTsProject } from '../../api_utils';
 import { apiIndexMapping } from '../api_doc';
 import { indexApis } from '../index_apis';
 
@@ -31,7 +31,6 @@ export async function crawlContractApi() {
       await indexApi(
         client,
         repoPath,
-        `${repoPath}/x-pack/tsconfig.json`,
         commitHash,
         commitDate,
         date === undefined);
@@ -44,11 +43,10 @@ export async function crawlContractApi() {
 export async function indexApi(
   client: elasticsearch.Client,
   repoPath: string,
-  tsConfigFilePath: string,
   commitHash: string,
   commitDate: string,
   indexAsLatest: boolean) {
-  const project = new Project({ tsConfigFilePath });
+  const project = getTsProject(repoPath);
   const plugins = getPluginInfoForRepo(repoPath);
 
   const sourceFiles = project.getSourceFiles();

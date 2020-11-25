@@ -8,7 +8,7 @@ import { createIndex } from "../../es_utils";
 import { getCheckoutDates, repo } from "../config";
 import { checkoutRepo, checkoutRoundedDate, getCommitDate } from "../../git_utils";
 import { Project, SourceFile } from 'ts-morph';
-import { getStaticApi } from '../../api_utils';
+import { getStaticApi, getTsProject } from '../../api_utils';
 import { getReferencesForApi } from '../get_references_for_api';
 import { indexRefDocs } from '../index_references';
 
@@ -28,7 +28,6 @@ export async function crawlStaticReferences() {
       await collectReferences(
         client,
         repoPath,
-        `${repoPath}/x-pack/tsconfig.json`,
         commitHash,
         commitDate,
         date === undefined);
@@ -41,11 +40,10 @@ export async function crawlStaticReferences() {
 export async function collectReferences(
   client: elasticsearch.Client,
   repoPath: string,
-  tsConfigFilePath: string,
   commitHash: string,
   commitDate: string,
   indexAsLatest: boolean) {
-  const project = new Project({ tsConfigFilePath });
+  const project = getTsProject(repoPath);
   const plugins = getPluginInfoForRepo(repoPath);
 
   const sourceFiles = project.getSourceFiles();

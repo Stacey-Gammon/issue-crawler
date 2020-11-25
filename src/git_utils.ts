@@ -45,7 +45,7 @@ export async function checkoutRoundedDate(
   const yesterday = moment();
   yesterday.subtract(1, 'd');
   const checkout = date ?
-    `master@{${date} -0000}` :
+    `master@{${date} 12:00:00 -0000}` :
     `master@{${yesterday.format('YYYY-MM-DD')} 12:00:00 -0000}`;
   const response = await exec(`cd ${repoPath} && git rev-list -1 --before="${checkout}" master`); 
   const hash = response.stdout.trim();

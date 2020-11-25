@@ -1,4 +1,4 @@
-import { ClassDeclaration, MethodDeclaration, Node, Project, ReferencedSymbol, SourceFile, SyntaxKind, Type } from "ts-morph";
+import { MethodDeclaration, Node, Project, ReferencedSymbol, SourceFile, SyntaxKind, Type } from "ts-morph";
 import { getApiId } from "./api_crawler/get_api_id";
 import { BasicPluginInfo, getPluginForNestedPath, getPluginForPath, getPluginNameFromPath, readmeExists } from "./plugin_utils";
 import { getPublicOrServer } from "./utils";
@@ -15,12 +15,21 @@ export interface Api {
   lifecycle?: string;
 }
 
+export function getTsProject(repoPath: string) {
+  const xpackTsConfig = `${repoPath}/x-pack/tsconfig.json`;
+  const project = new Project({ tsConfigFilePath: xpackTsConfig });
+  project.addSourceFilesAtPaths(`${repoPath}/examples/**/*{.d.ts,.ts}`);
+  project.resolveSourceFileDependencies();
+  return project;
+}
+
 export interface ImplicitApiOpts {
   returnType: Type;
   file: string;
   lifecycle: string;
   apis: { [key: string]: Api }
   plugin: BasicPluginInfo;
+  project: Project;
 }
 
 export function getStaticApi(
@@ -92,12 +101,12 @@ async function collectApiInfoForFiles(
   return apis;
 }
 
-function addImplicitApi({ file, returnType, plugin, lifecycle, apis }: ImplicitApiOpts) {
+function addImplicitApi({ file, returnType, plugin, lifecycle, apis, project }: ImplicitApiOpts) {
   try {
     const publicOrServer = getPublicOrServer(file);
     returnType.getProperties().forEach(p => {
       p.getDeclarations().forEach(d => {
-        if (d.getKind() === SyntaxKind.PropertyAssignment ||
+         if (d.getKind() === SyntaxKind.PropertyAssignment ||
             d.getKind()=== SyntaxKind.ShorthandPropertyAssignment ||
             d.getKind() === SyntaxKind.PropertySignature ||
             d.getKind() === SyntaxKind.PropertyDeclaration ||
@@ -112,6 +121,7 @@ function addImplicitApi({ file, returnType, plugin, lifecycle, apis }: ImplicitA
             return;
           }
           const id = getApiId({ plugin: plugin.name, publicOrServer, lifecycle, name: pa.getName()});
+
           apis[id] = {
             plugin: plugin.name,
             file: { path: file },
@@ -140,37 +150,17 @@ export function addContractApis(
   apis: { [key: string]: Api }) {
   const file = source.getFilePath();
   source.getClasses().forEach(c => {
-    c.getMethods().forEach(m => {
-      const lifecycle = m.getName();
-      if (lifecycle === 'setup' || lifecycle === 'start') {
-        const ret = m.getReturnTypeNode();
-        if (ret) {
-          project.getLanguageService().getDefinitions(ret).forEach(d => {
-            const decNode = d.getDeclarationNode();
-            if (decNode) {
-              // Promise has to be handled a bit differently.
-              if (Node.isInterfaceDeclaration(decNode) && decNode.getName() === 'Promise') {
-                addRefsForPromiseType(ret.getType().getTypeArguments(), plugin, file, lifecycle, apis);
-               } else {
-                addApiFromNode(decNode, plugin, file, lifecycle, apis);
-              }
-            }
-          });
-        } else {
-          const typeText = m.getReturnType().getText().trim();
-          const symbolName = m.getReturnType().getSymbol()?.getName();
-          if (symbolName && symbolName === 'Promise') {
-            addRefsForPromiseType(m.getReturnType().getTypeArguments(), plugin, file, lifecycle, apis);
-            return;
-          }
-          if (typeText !== '{}' &&
-              typeText !== 'Promise<void>' &&
-              typeText !== 'Promise<{}>' &&
-              typeText !== 'void') {
-            addImplicitApi({ returnType: m.getReturnType(), plugin, file, lifecycle, apis });
-          }
+    let hasTypeArgs = false;
+    c.getImplements().forEach(i => {
+      let index = 0;
+      i.getType().getTypeArguments().forEach(ta1 => {
+        hasTypeArgs = true;
+        const lifecycle = index === 0 ? 'setup' : 'start';
+        if (index < 2) { 
+          addImplicitApi({ file, returnType: ta1, plugin, lifecycle, project, apis });
         }
-      }
+        index++;
+      });
     });
   });
 }
@@ -190,11 +180,8 @@ function addApiFromNode(
     }
 
     const properties = node.getProperties();
-    console.log(`Getting ${properties.length} api properties for node ${identifer}`);
     properties.forEach(m => {
       const id = getApiId({ plugin: plugin.name, lifecycle, publicOrServer, name: m.getName() });
-
-    console.log(`Adding ${id} for node ${identifer}`);
       apis[id] = {
         plugin: plugin.name,
         file: { path: file },
@@ -211,13 +198,14 @@ function addApiFromNode(
 }
 
 function addRefsForPromiseType(
+  project: Project,
   typeArgs: Type[],
   plugin: BasicPluginInfo,
   file: string,
   lifecycle: string,
   apis: { [key: string]: Api }) {
   typeArgs.forEach(tp => {
-    addImplicitApi({ file, returnType: tp, plugin, lifecycle, apis});
+    addImplicitApi({ file, returnType: tp, plugin, lifecycle, apis, project});
   });
 }
 

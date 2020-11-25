@@ -1,8 +1,8 @@
 import { SimpleGit } from 'simple-git/promise';
 import { Project, SourceFile } from 'ts-morph';
 import { getRefCnt } from './api_crawler/get_ref_cnt';
-import { getContractApi, getStaticApi } from './api_utils';
-import { checkoutRepo, getCommitHash } from './git_utils';
+import { getContractApi, getStaticApi, getTsProject } from './api_utils';
+import { checkoutRepo, checkoutRoundedDate, getCommitHash } from './git_utils';
 import { BasicPluginInfo, getPluginForPath, getPluginInfoForRepo } from './plugin_utils';
 import { getReferencesForApi } from './reference_crawler/get_references_for_api';
 import elasticsearch from 'elasticsearch';
@@ -20,8 +20,8 @@ beforeAll(async () =>{
   const repo = await checkoutRepo('elastic/kibana', process.env.LOCAL_REPO_DIR);
   repoPath = repo.repoPath;
   currentGit = repo.currentGit;
-  commitHash = await getCommitHash(currentGit);
-  project = new Project({ tsConfigFilePath: `${repoPath}/x-pack/tsconfig.json` });
+  commitHash = await getCommitHash(currentGit);//await checkoutRoundedDate(repoPath, currentGit, '2020-11-19')
+  project = getTsProject(repoPath);
   plugins = getPluginInfoForRepo(repoPath);
   sourceFiles = project.getSourceFiles();
   client = new elasticsearch.Client(elasticsearchEnv);
@@ -74,3 +74,51 @@ it('getApi for "core" plugin', async () => {
   expect(refCnt).toBeGreaterThan(0);
 });
 
+
+it('getContractApi for example plugins works', async () => {
+  jest.setTimeout(60000*2);
+  const files: Array<SourceFile> = sourceFiles.filter((v, i) => (v.getFilePath().indexOf('examples/embeddable_examples/public/plugin.ts') >= 0));
+  
+  const apis = Object.values(getContractApi(project, files, plugins));
+
+  expect(apis.length).toBeGreaterThan(0);
+});
+
+it('data.server.start.indexPatterns has references (implicit contract API)', async () => {
+  jest.setTimeout(60000*2);
+  const files: Array<SourceFile> = sourceFiles.filter((v, i) => (
+    v.getFilePath().indexOf('src/plugins/data/server/plugin.ts') >= 0
+  ));
+  
+  const apis = Object.values(getContractApi(project, files, plugins));
+
+  expect(apis.length).toBeGreaterThan(0);
+
+  const api = Object.values(apis).find(api => api.id === 'data.server.start.indexPatterns');
+
+  expect(api).toBeDefined();
+  const refs = getReferencesForApi({ apis: [api!], plugins });
+
+  expect(refs.length).toBeGreaterThan(0);
+
+  expect(refs.find(r => r.reference.plugin === 'vis_type_timeseries')).toBeDefined();
+});
+
+it('data.server.start.search is references (implicit contract API)', async () => {
+  jest.setTimeout(60000*2);
+  const files: Array<SourceFile> = sourceFiles.filter((v, i) => (
+    v.getFilePath().indexOf('src/plugins/data/server/plugin.ts') >= 0 ||
+    v.getFilePath().indexOf('data/public/plugin.ts') >= 0
+  ));
+  
+  const apis = Object.values(getContractApi(project, files, plugins));
+
+  expect(apis.length).toBeGreaterThan(0);
+
+  const api = Object.values(apis).find(api => api.id === 'data.server.start.search');
+
+  expect(api).toBeDefined();
+  const refs = getReferencesForApi({ apis: [api!], plugins });
+
+  expect(refs.length).toBeGreaterThan(0);
+});
