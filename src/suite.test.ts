@@ -135,7 +135,5 @@ it('data.public.start.actions and data.server.start.search has references', asyn
   const actionRefs = getReferencesForApi({ apis: [actionsApi!], plugins });
 
   expect(actionRefs.length).toBeGreaterThan(0);
-
-  console.log('refs is ', JSON.stringify(refs));
-  expect(refs.find(r => r.reference.plugin === 'vis_type_vislib')).toBeDefined();
+  expect(actionRefs.find(r => r.reference.plugin === 'vis_type_vislib')).toBeDefined();
 });
