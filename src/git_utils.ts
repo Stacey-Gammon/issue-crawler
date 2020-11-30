@@ -12,6 +12,10 @@ export interface GitInfo {
   currentGit: SimpleGit
 }
 
+export function getCheckoutDates() {
+  return process.env.CHECKOUT_DATES ? process.env.CHECKOUT_DATES.split(',').map(d => d.trim()) : [undefined]
+}
+
 export async function checkoutRepo(repo: string, dir?: string):
   Promise<{ repoPath: string, currentGit: SimpleGit }> {
   const tmpDir = dir && dir != '' ? { name: dir } : tmp.dirSync();

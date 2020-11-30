@@ -9,8 +9,8 @@ import sloc from 'sloc';
 import tmp from 'tmp';
 import { BasicPluginInfo, getPluginInfoForRepo, getTeamOwner, getPluginForPath } from "../plugin_utils";
 import { getIndexName, indexDocs } from "../es_utils";
-import { repo, checkoutDates } from './config';
-import { checkoutRepo, checkoutRoundedDate, getCommitDate, getCommitHash } from "../git_utils";
+import { repo } from './config';
+import { checkoutRepo, checkoutRoundedDate, getCommitDate, getCommitHash, getCheckoutDates } from "../git_utils";
 
 const client = new elasticsearch.Client(elasticsearchEnv);
 
@@ -159,7 +159,7 @@ async function indexFiles(files:  Array<FileDocAttributes | undefined>, repo: st
 export async function crawlCode() {
   const { repoPath, currentGit } = await checkoutRepo(repo, process.env.LOCAL_REPO_DIR);
   try {
-    for (const date of checkoutDates) {
+    for (const date of getCheckoutDates()) {
       await checkoutRoundedDate(repoPath, currentGit, date);
 
       const commitHash = await getCommitHash(currentGit);
@@ -171,7 +171,7 @@ export async function crawlCode() {
       //   continue;
       // }
 
-      const plugins = getPluginInfoForRepo(repoPath)
+      const plugins = getPluginInfoForRepo(repoPath);
 
       let files: Array<FileDocAttributes | undefined> = [];
       
