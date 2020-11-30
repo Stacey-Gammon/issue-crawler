@@ -10,6 +10,7 @@ export interface ReferenceDoc {
     team: string;
     lifecycle?: string;
     isStatic?: boolean;
+    publicOrServer: 'public' | 'server',
     xpack: boolean;
   }
   reference: {
@@ -30,7 +31,8 @@ export const referenceIndexMapping: Object = {
   'source.plugin': { type: 'keyword' },
   'source.team': { type: 'keyword' },
   'source.name': { type: 'keyword' },
-  'source.lifeCycle': { type: 'keyword' },
+  'source.publicOrServer': { type: 'keyword' },
+  'source.lifecycle': { type: 'keyword' },
   'source.isStatic': { type: 'boolean' },
   'source.xpack': { type: 'boolean' },
   'commitHash': { type: 'keyword' },

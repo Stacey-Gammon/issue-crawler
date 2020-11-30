@@ -29,7 +29,7 @@ export async function checkoutRepo(repo: string, dir?: string):
 }
 
 export async function getCommitHash(currentGit: SimpleGit) {
-  return await currentGit.raw(["rev-parse", "HEAD"]);
+  return (await currentGit.raw(["rev-parse", "HEAD"])).trim();
 }
 
 export async function getCommitDate(currentGit: SimpleGit)  {
@@ -41,14 +41,15 @@ export async function getCommitDate(currentGit: SimpleGit)  {
 export async function checkoutRoundedDate(
   repoPath: string,
   currentGit: SimpleGit,
-  date?: string) {
+  date?: string): Promise<string> {
   const yesterday = moment();
   yesterday.subtract(1, 'd');
   const checkout = date ?
-    `master@{${date}}` :
-    `master@{${yesterday.format('YYYY-MM-DD')} 12:00:00}`;
+    `master@{${date} 12:00:00 -0000}` :
+    `master@{${yesterday.format('YYYY-MM-DD')} 12:00:00 -0000}`;
   const response = await exec(`cd ${repoPath} && git rev-list -1 --before="${checkout}" master`); 
   const hash = response.stdout.trim();
   console.log(`Checking out ${hash} as ${checkout}`);
   await currentGit.checkout(hash);
+  return hash;
 }

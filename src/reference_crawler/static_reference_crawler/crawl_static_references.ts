@@ -2,14 +2,15 @@
 import  elasticsearch from 'elasticsearch';
 import  { elasticsearchEnv } from '../../config';
 
-import { getPluginForPath, getPluginInfoForRepo } from "../../plugin_utils";
+import { getPluginInfoForRepo } from "../../plugin_utils";
 import { referenceIndexMapping, refsIndexName } from "../reference_doc";
 import { createIndex } from "../../es_utils";
-import { checkoutDates, repo } from "../config";
-import { checkoutRepo, checkoutRoundedDate, getCommitDate, getCommitHash } from "../../git_utils";
+import { getCheckoutDates, repo } from "../config";
+import { checkoutRepo, checkoutRoundedDate, getCommitDate } from "../../git_utils";
 import { Project, SourceFile } from 'ts-morph';
-import { getStaticApi } from '../../api_utils';
-import { indexApiReferences } from '../index_api_references';
+import { getStaticApi, getTsProject } from '../../api_utils';
+import { getReferencesForApi } from '../get_references_for_api';
+import { indexRefDocs } from '../index_references';
 
 const client = new elasticsearch.Client(elasticsearchEnv);
 
@@ -20,15 +21,13 @@ export async function crawlStaticReferences() {
   await createIndex(client, `${refsIndexName}-latest`, referenceIndexMapping);
 
   try {
-    for (const date of checkoutDates) {
-      await checkoutRoundedDate(repoPath, currentGit, date);
+    for (const date of getCheckoutDates()) {
+      const commitHash = await checkoutRoundedDate(repoPath, currentGit, date);
       const commitDate = await getCommitDate(currentGit);
-      const commitHash = await getCommitHash(currentGit);
 
       await collectReferences(
         client,
         repoPath,
-        `${repoPath}/x-pack/tsconfig.json`,
         commitHash,
         commitDate,
         date === undefined);
@@ -41,11 +40,10 @@ export async function crawlStaticReferences() {
 export async function collectReferences(
   client: elasticsearch.Client,
   repoPath: string,
-  tsConfigFilePath: string,
   commitHash: string,
   commitDate: string,
   indexAsLatest: boolean) {
-  const project = new Project({ tsConfigFilePath });
+  const project = getTsProject(repoPath);
   const plugins = getPluginInfoForRepo(repoPath);
 
   const sourceFiles = project.getSourceFiles();
@@ -60,5 +58,7 @@ export async function collectReferences(
   const apis = getStaticApi(staticFiles, plugins);
   console.log(`Collecting references from ${staticFiles.length} files...`);
 
-  indexApiReferences(client, apis, commitHash, commitDate, indexAsLatest, true, plugins);
+  const refs = getReferencesForApi({ apis: Object.values(apis), plugins });
+
+  await indexRefDocs(client, commitHash, commitDate, Object.values(refs), indexAsLatest);
 }
