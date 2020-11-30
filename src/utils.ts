@@ -70,10 +70,12 @@ export function getRelativeKibanaPath(fullPath: string): string {
 		return parts.slice(parts.indexOf('x-pack'), parts.length).join('/');
 	} else if (parts.indexOf('src') >= 0) {
 		return parts.slice(parts.indexOf('src'), parts.length).join('/');
-	}
+	} else if (parts.indexOf('examples') >= 0) {
+	  return parts.slice(parts.indexOf('examples'), parts.length).join('/');
+  }
 	return fullPath;
 }
 
-export function getPublicOrServer(path: string) {
+export function getPublicOrServer(path: string): 'public' | 'server' {
   return path.indexOf('/public/') >= 0 ? 'public' : 'server';
 }

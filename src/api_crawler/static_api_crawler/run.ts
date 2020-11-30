@@ -1,4 +1,9 @@
 
 import { crawlStaticApi } from './crawl_static_api';
 
-crawlStaticApi();
+try {
+  crawlStaticApi();
+} catch (e) {
+  console.error(e);
+  process.exit(1);
+}

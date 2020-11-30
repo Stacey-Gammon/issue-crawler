@@ -11,7 +11,7 @@ export interface ApiDoc {
   type: string;
   isStatic: boolean;
   xpack: boolean;
-  lifeCycle?: string;
+  lifecycle?: string;
 }
 
 export const apiIndexMapping: Object = {
@@ -24,7 +24,7 @@ export const apiIndexMapping: Object = {
   'refCount': { type: 'number' },
   'team': { type: 'keyword' },
   'plugin': { type: 'keyword' },
-  'lifeCycle': { type: 'keyword' },
+  'lifecycle': { type: 'keyword' },
   'commitHash': { type: 'keyword' },
   'commitDate': { type: 'date' }
 };
@@ -32,7 +32,13 @@ export const apiIndexMapping: Object = {
 
 export async function getApiDoc(client: elasticsearch.Client, api: Api, commitHash: string): Promise<ApiDoc> {
   return {
-    ...api,
+    id: api.id,
+    plugin: api.plugin,
+    file: api.file,
+    team: api.team,
+    type: api.type,
+    isStatic: api.isStatic,
+    name: api.name,
     refCount: await getRefCnt(client, api.id, commitHash),
     xpack: api.file.path.indexOf('xpack') >= 0
   };
