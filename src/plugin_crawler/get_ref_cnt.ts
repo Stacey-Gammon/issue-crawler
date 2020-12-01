@@ -15,7 +15,7 @@ export async function getRefCnt(client: elasticsearch.Client, plugin: string, co
               match: { "source.plugin": plugin }
             },
             {
-              match: { "commitHash": "48231c8400d81c8628313368e4bd90cf37864657" }
+              match: { "commitHash": commitHash }
             }
           ]
         }
@@ -28,10 +28,11 @@ export async function getRefCnt(client: elasticsearch.Client, plugin: string, co
     }
   });
 
+  console.log('response.hits.total is ', response.hits.total);
   // @ts-ignore
-  if (response.hits.total.value) {
-    throw new Error(`Need to crawl api first to get accurate ref count for hash ${commitHash}`)
+  if (response.hits.total.value === 0) {
+ //   throw new Error(`Need to crawl api first to get accurate ref count for hash ${commitHash}`)
   }
 
-  return response.aggregations?.refCount;
+  return response.aggregations?.refCount.value;
 }

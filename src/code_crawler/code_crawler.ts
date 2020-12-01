@@ -9,8 +9,8 @@ import sloc from 'sloc';
 import tmp from 'tmp';
 import { BasicPluginInfo, getPluginInfoForRepo, getTeamOwner, getPluginForPath } from "../plugin_utils";
 import { getIndexName, indexDocs } from "../es_utils";
-import { repo, checkoutDates } from './config';
-import { checkoutRepo, checkoutRoundedDate, getCommitDate, getCommitHash } from "../git_utils";
+import { repo } from './config';
+import { checkoutRepo, checkoutRoundedDate, getCheckoutDates, getCommitDate } from "../git_utils";
 
 const client = new elasticsearch.Client(elasticsearchEnv);
 
@@ -138,14 +138,20 @@ const getDocument = (commitHash: string, commitDate: string, repo: string) => (f
   }
 };
 
-async function indexFiles(files:  Array<FileDocAttributes | undefined>, repo: string, commitHash: string, commitDate: string) {
+async function indexFiles(
+    files:  Array<FileDocAttributes | undefined>,
+    repo: string,
+    commitHash: string,
+    commitDate: string,
+    checkoutDate?: string) {
   await indexDocs<FileDocAttributes | undefined>(
     client,
     files,
     commitHash,
     commitDate,
     getIndexName('code', repo),
-    (doc) => doc ? `${doc.commitHash}${doc.fullFilename.replace('/', '')}` : '');
+    (doc) => doc ? `${checkoutDate}${commitHash}${doc.fullFilename.replace('/', '')}` : '',
+    checkoutDate);
   
   await indexDocs<FileDocAttributes | undefined>(
     client,
@@ -159,10 +165,8 @@ async function indexFiles(files:  Array<FileDocAttributes | undefined>, repo: st
 export async function crawlCode() {
   const { repoPath, currentGit } = await checkoutRepo(repo, process.env.LOCAL_REPO_DIR);
   try {
-    for (const date of checkoutDates) {
-      await checkoutRoundedDate(repoPath, currentGit, date);
-
-      const commitHash = await getCommitHash(currentGit);
+    for (const date of getCheckoutDates()) {
+      const commitHash = await checkoutRoundedDate(repoPath, currentGit, date);
       const commitDate = await getCommitDate(currentGit);
       // if (await alreadyIndexed(repo, commitHash)) {
       //   console.log(
@@ -171,7 +175,8 @@ export async function crawlCode() {
       //   continue;
       // }
 
-      const plugins = getPluginInfoForRepo(repoPath)
+      console.log('Hash is ' + commitHash + ' and date is ' + commitDate);
+      const plugins = getPluginInfoForRepo(repoPath);
 
       let files: Array<FileDocAttributes | undefined> = [];
       
@@ -181,11 +186,11 @@ export async function crawlCode() {
         const file = getDocument(commitHash, commitDate, repo)(analyzedFiles[i]);
         files.push(file);
         if (files.length === 500) {
-          await indexFiles(files, repo, commitHash, commitDate);
+          await indexFiles(files, repo, commitHash, commitDate, date);
           files = [];
         }
       }
-      await indexFiles(files, repo, commitHash, commitDate);
+      await indexFiles(files, repo, commitHash, commitDate, date);
     }
   } catch (e) {
     console.log(`Indexing ${repo} failed: `, e);

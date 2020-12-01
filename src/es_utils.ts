@@ -35,7 +35,8 @@ export async function indexDocs<Doc>(
     commitHash: string,
     commitDate: string,
     indexName: string,
-    getId?: (d: Doc) => string) {
+    getId?: (d: Doc) => string,
+    checkoutDate?: string) {
   if (docs.length === 0) return;
   const batchSize = 500;
   let group = 0;
@@ -50,7 +51,7 @@ export async function indexDocs<Doc>(
           _type: "_doc",
           ...(getId ?  { _id: getId(docs[i]) } : {}), 
         } });
-        body.push({ ...docs[i], commitHash, commitDate });
+        body.push({ ...docs[i], commitHash, commitDate, checkoutDate });
       } else {
         console.error('undefined doc!');
       }

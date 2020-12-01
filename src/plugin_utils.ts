@@ -188,9 +188,12 @@ export function fillPluginInfo<T extends BasicPluginInfo>(
     if (stats.isDirectory()) {
       const isPlugin = fs.existsSync(dirPrefix + path + '/kibana.json') || path.indexOf('src/core') >= 0;
       if (isPlugin && !path.includes('plugin_functional') && !path.includes('/test/') && !path.includes('__fixtures__')) {
-        const hasReadme = readmeExists(dirPrefix + path + '/README.asciidoc');
+        const hasReadme = readmeExists(dirPrefix + path);
         const name = getPluginNameFromPath(path);
 
+        if (!hasReadme) {
+          console.log('plugin ' + name + ' is missing readme, none found at ' + dirPrefix + path);
+        }
         // There can be multiple lines in code owners that maps to the same plugin. Skip dups.
         if (plugins.find(p => p.name === name)) {
           console.log('Plugin named ' + name + ' already  exists');
@@ -213,7 +216,8 @@ export function fillPluginInfo<T extends BasicPluginInfo>(
 }
 
 export function readmeExists(pluginPath: string) {
- return fs.existsSync(pluginPath + '/README.asciidoc') || fs.existsSync(pluginPath + '/README.md');
+  let path = pluginPath.endsWith('/') ? pluginPath : pluginPath + '/';
+ return fs.existsSync(path + 'README.asciidoc') || fs.existsSync(path + 'README.md');
 }
 
 export function getPluginNameFromPath(path: string) {

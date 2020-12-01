@@ -6,6 +6,7 @@
   "scripts": {
     "test": "rm -rf build && npx tsc && jest build",
     "build": "rm -rf build && npx tsc",
+    "crawlPlugins": "rm -rf build && npx tsc && node build/plugin_crawler/run.js",
     "crawlRefs": "rm -rf build && npx tsc && node build/api_reference_crawler/run.js",
     "crawlPlugins": "rm -rf build && npx tsc && node build/plugin_crawler/run.js",
     "crawlCode": "rm -rf build && npx tsc && node build/code_crawler/run.js",
