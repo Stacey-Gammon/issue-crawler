@@ -1,5 +1,5 @@
-import  elasticsearch from 'elasticsearch';
-import  { elasticsearchEnv } from '../../config';
+import  elasticsearch from '@elastic/elasticsearch';
+import  { elasticsearchEnv } from '../../es_config';
 
 import { getPluginInfoForRepo } from "../../plugin_utils";
 import { referenceIndexMapping, refsIndexName } from "../reference_doc";
@@ -11,15 +11,16 @@ import { getContractApi, getTsProject } from '../../api_utils';
 import { indexRefDocs } from '../index_references';
 import { getReferencesForApi } from '../get_references_for_api';
 
-const client = new elasticsearch.Client(elasticsearchEnv);
-
 interface CrawlContractReferenceOps {
-  fileFilters: string[]
+  fileFilters: string[];
+  client?: elasticsearch.Client
 }
 
-export async function crawlContractReferences({ fileFilters }: CrawlContractReferenceOps) {
+export async function crawlContractReferences(ops: CrawlContractReferenceOps) {
   const { repoPath, currentGit } = await checkoutRepo(repo, process.env.LOCAL_REPO_DIR);
 
+  const fileFilters = ops.fileFilters;
+  const client = ops.client || new elasticsearch.Client(elasticsearchEnv);
   await createIndex(client, refsIndexName, referenceIndexMapping);
   await createIndex(client, `${refsIndexName}-latest`, referenceIndexMapping);
 

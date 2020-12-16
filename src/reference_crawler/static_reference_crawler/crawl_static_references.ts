@@ -1,6 +1,6 @@
 
-import  elasticsearch from 'elasticsearch';
-import  { elasticsearchEnv } from '../../config';
+import  elasticsearch from '@elastic/elasticsearch';
+import  { elasticsearchEnv } from '../../es_config';
 
 import { getPluginInfoForRepo } from "../../plugin_utils";
 import { referenceIndexMapping, refsIndexName } from "../reference_doc";
@@ -12,11 +12,10 @@ import { getStaticApi, getTsProject } from '../../api_utils';
 import { getReferencesForApi } from '../get_references_for_api';
 import { indexRefDocs } from '../index_references';
 
-const client = new elasticsearch.Client(elasticsearchEnv);
-
-export async function crawlStaticReferences() {
+export async function crawlStaticReferences(ops: { client?: elasticsearch.Client } = {}) {
   const { repoPath, currentGit } = await checkoutRepo(repo, process.env.LOCAL_REPO_DIR);
 
+  const client = ops.client || new elasticsearch.Client(elasticsearchEnv);
   await createIndex(client, refsIndexName, referenceIndexMapping);
   await createIndex(client, `${refsIndexName}-latest`, referenceIndexMapping);
 

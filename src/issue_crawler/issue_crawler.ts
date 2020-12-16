@@ -1,12 +1,13 @@
 import { Octokit } from '@octokit/rest';
 import { retry } from '@octokit/plugin-retry';
-import  elasticsearch, { BulkIndexDocumentsParams, Client, SearchResponse } from 'elasticsearch';
+import  elasticsearch, {  Client } from '@elastic/elasticsearch';
 
-import  { elasticsearchEnv, githubAuth, repos, privateRepos } from './config';
+import  { githubAuth, repos, privateRepos } from './config';
 
 import { getProjects, ProjectInfo } from '../projects';
 import { convertIssue, KibanaIssue } from '../issues';
 import { IssuesListForRepoResponseData, OctokitResponse } from '@octokit/types';
+import { elasticsearchEnv } from '../es_config';
 
 const CACHE_INDEX = 'cache';
 const CLEAR_CACHE = true;
@@ -35,7 +36,7 @@ function getIssueBulkUpdates(
 		index: string,
 		issues: Array<KibanaIssue>) {
 	console.log('getIssueBulkUpdates for ' + issues.length + ' issues');
-	const ret: BulkIndexDocumentsParams['body'] = [];
+	const ret: any = [];
 	return ret.concat(...issues.map(issue => [
 		{ index: { _index: index, _type: '_doc', _id: issue.id }},
 		issue
@@ -46,7 +47,7 @@ function getIssueBulkUpdates(
  * Returns the bulk request body to update the cache key for the specified repo
  * and page.
  */
-function getCacheKeyUpdate(owner: string, repo: string, page: number, key?: string): BulkIndexDocumentsParams['body'] {
+function getCacheKeyUpdate(owner: string, repo: string, page: number, key?: string): Array<unknown> {
 	const id = `${owner}_${repo}_${page}`
 	return [
 		{ index: { _index: CACHE_INDEX, _type: '_doc', _id: id }},
@@ -73,7 +74,7 @@ async function processGitHubIssues(
 		const flattened: Array<KibanaIssue> = [];
 		issueGroups.forEach(issueGroup => flattened.push(...issueGroup));
 
-    const existingIssues = await client.mget<KibanaIssue>({
+    const existingIssues = await client.mget<Array<KibanaIssue>>({
 			body: {
 				docs: [
 					...flattened.map(issue => ({
@@ -84,7 +85,9 @@ async function processGitHubIssues(
 			}
 		});
 
-		if (existingIssues.docs) {
+		if (existingIssues) {
+			console.log('existingIssues is ', existingIssues);
+			// @ts-ignore
 			existingIssues.docs.forEach(doc => {
 				if (doc.found) {
 					const matchingIssue = flattened.find(i => (i.id + '') === (doc._id + ''));
@@ -114,7 +117,7 @@ async function processGitHubIssues(
 	}
 }
 
-async function getEntries(owner: string, repo: string): Promise<SearchResponse<CacheEntry>  | undefined> {
+async function getEntries(owner: string, repo: string): Promise<unknown  | undefined> {
 	try {
 		return await client.search({
 			index: CACHE_INDEX,
@@ -175,11 +178,13 @@ async function loadCacheForRepo(owner: string, repo: string): Promise<Record<num
 
 	if (!entries) return {};
 
+	// @ts-ignore
 	if (entries && entries.hits.total === 0) {
 		return {};
 	}
 
 	const cacheMapping: Record<string, string | undefined>  = {};
+	// @ts-ignore
 	return entries.hits.hits.reduce((cache, entry: any) => {
 		cache[entry._source.page] = entry._source.key;
 		return cache;

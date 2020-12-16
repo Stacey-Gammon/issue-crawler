@@ -1,7 +1,7 @@
 
 import git from "simple-git/promise";
-import  elasticsearch from 'elasticsearch';
-import  { elasticsearchEnv } from '../issue_crawler/config';
+import { Client } from '@elastic/elasticsearch';
+import  { elasticsearchEnv } from '../es_config';
 import fs from 'fs';
 import path from 'path';
 import find from 'find';
@@ -12,7 +12,7 @@ import { getIndexName, indexDocs } from "../es_utils";
 import { repo } from './config';
 import { checkoutRepo, checkoutRoundedDate, getCheckoutDates, getCommitDate } from "../git_utils";
 
-const client = new elasticsearch.Client(elasticsearchEnv);
+const client = new Client(elasticsearchEnv);
 
 const fileExtensions = [".js", ".ts", ".jsx", ".tsx", ".html", ".css", ".scss"];
 
@@ -110,6 +110,8 @@ async function analyze(localPath: string, plugins: Array<BasicPluginInfo>) {
 }
 
 async function alreadyIndexed(repo: string, commitHash: string) {
+
+	// @ts-ignore
   const entries = await client.search({
     index: getIndexName('code', repo),
     ignoreUnavailable: true,
@@ -123,6 +125,7 @@ async function alreadyIndexed(repo: string, commitHash: string) {
     }
   });
 
+	// @ts-ignore
   return entries.hits.total > 0;
 }
 

@@ -1,4 +1,4 @@
-import { Client } from 'elasticsearch';
+import { Client } from '@elastic/elasticsearch';
 import fs from 'fs';
 import { indexDocs } from './es_utils';
 

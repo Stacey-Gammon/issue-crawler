@@ -1,5 +1,5 @@
 
-import { Client } from 'elasticsearch';
+import { Client } from '@elastic/elasticsearch';
 
 export async function alreadyIndexed(client: Client, repo: string, indexName: string, commitHash: string) {
   const entries = await client.search({
@@ -14,6 +14,7 @@ export async function alreadyIndexed(client: Client, repo: string, indexName: st
     }
   });
 
+  // @ts-ignore
   return entries.hits.total > 0;
 }
 
@@ -61,13 +62,13 @@ export async function indexDocs<Doc>(
       const response = await client.bulk({
         body
       });
-      if (response.errors) {
-        console.log(`Encountered errors:`);
-        console.log(response.errors);
-        process.exit(1);
-      } else {
-        console.log(`${group + 1}) Successfully indexed ${(body.length/2) * (group + 1)}/${docs.length} docs into ${indexName}.`);
-      }
+      // if (response.errors) {
+      //   console.log(`Encountered errors:`);
+      //   console.log(response.errors);
+      //   process.exit(1);
+      // } else {
+      //   console.log(`${group + 1}) Successfully indexed ${(body.length/2) * (group + 1)}/${docs.length} docs into ${indexName}.`);
+      // }
     } catch (e) {
       console.error(e);
       process.exit(1);

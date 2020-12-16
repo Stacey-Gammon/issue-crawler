@@ -1,4 +1,4 @@
-import elasticsearch from 'elasticsearch';
+import  elasticsearch from '@elastic/elasticsearch';
 import { refsIndexName } from '../reference_crawler/reference_doc';
 
 export async function getRefCnt(client: elasticsearch.Client, apiId: string, commitHash: string) {

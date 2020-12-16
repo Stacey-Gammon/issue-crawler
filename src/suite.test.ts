@@ -5,8 +5,8 @@ import { getContractApi, getStaticApi, getTsProject } from './api_utils';
 import { checkoutRepo, checkoutRoundedDate, getCommitHash } from './git_utils';
 import { BasicPluginInfo, getPluginForPath, getPluginInfoForRepo } from './plugin_utils';
 import { getReferencesForApi } from './reference_crawler/get_references_for_api';
-import elasticsearch from 'elasticsearch';
-import { elasticsearchEnv } from './config';
+import { Client } from '@elastic/elasticsearch';
+import { elasticsearchEnv } from './es_config';
 
 let repoPath: string;
 let project: Project;
@@ -14,7 +14,7 @@ let plugins: Array<BasicPluginInfo> = [];
 let sourceFiles: Array<SourceFile> = [];
 let currentGit: SimpleGit;
 let commitHash: string;
-let client: elasticsearch.Client;
+let client: Client;
 
 beforeAll(async () =>{
   const repo = await checkoutRepo('elastic/kibana', process.env.LOCAL_REPO_DIR);
@@ -24,7 +24,7 @@ beforeAll(async () =>{
   project = getTsProject(repoPath);
   plugins = getPluginInfoForRepo(repoPath);
   sourceFiles = project.getSourceFiles();
-  client = new elasticsearch.Client(elasticsearchEnv);
+  client = new Client(elasticsearchEnv);
 });
 
 

@@ -20,11 +20,10 @@
   "author": "Tim Roes <mail@timroes.de>",
   "license": "Apache-2.0",
   "dependencies": {
+    "@elastic/elasticsearch": "^7.10.0",
     "@octokit/plugin-retry": "^3.0.1",
     "@octokit/rest": "^18.0.6",
-    "@types/elasticsearch": "^5.0.36",
     "await-exec": "^0.1.2",
-    "elasticsearch": "^16.7.1",
     "find": "^0.3.0",
     "moment": "^2.29.1",
     "simple-git": "^2.21.0",

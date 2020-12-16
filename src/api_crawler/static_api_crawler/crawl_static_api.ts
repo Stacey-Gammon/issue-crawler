@@ -1,7 +1,7 @@
 
 
-import  elasticsearch from 'elasticsearch';
-import  { elasticsearchEnv } from '../../config';
+import  elasticsearch from '@elastic/elasticsearch';
+import  { elasticsearchEnv } from '../../es_config';
 
 import { getPluginInfoForRepo } from "../../plugin_utils";
 import { createIndex, getIndexName } from "../../es_utils";
@@ -12,13 +12,12 @@ import { getStaticApi, getTsProject } from '../../api_utils';
 import { apiIndexMapping } from '../api_doc';
 import { indexApis } from '../index_apis';
 
-const client = new elasticsearch.Client(elasticsearchEnv);
-
 const apiIndexName = getIndexName('api', repo);
 
-export async function crawlStaticApi() {
+export async function crawlStaticApi(ops: { client?: elasticsearch.Client } = {}) {
   const { repoPath, currentGit } = await checkoutRepo(repo, process.env.LOCAL_REPO_DIR);
 
+  const client = ops.client || new elasticsearch.Client(elasticsearchEnv);
   await createIndex(client, apiIndexName, apiIndexMapping);
   await createIndex(client, `${apiIndexName}-latest`, apiIndexMapping);
 

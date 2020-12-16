@@ -1,4 +1,4 @@
-import  elasticsearch from 'elasticsearch';
+import  elasticsearch from '@elastic/elasticsearch';
 import { getIndexName, indexDocs } from '../es_utils';
 import { repo } from './config';
 import { getRefDocId } from './get_ref_doc_id';

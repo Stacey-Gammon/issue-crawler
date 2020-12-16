@@ -26,7 +26,7 @@ export async function checkoutRepo(repo: string, dir?: string):
  
   const currentGit = git(tmpDir.name);
   
-  if (dir === undefined) {
+  if (dir === undefined || dir === '') {
     console.log(`Cloning ${repo}...`);
     await currentGit.clone(`https://github.com/${repo}.git`, tmpDir.name);
     console.log(`Clone completed`);

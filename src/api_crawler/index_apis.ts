@@ -1,5 +1,5 @@
 
-import elasticsearch from 'elasticsearch';
+import  elasticsearch from '@elastic/elasticsearch';
 import { Api } from '../api_utils';
 import { getIndexName, indexDocs } from '../es_utils';
 import { ApiDoc, getApiDoc } from './api_doc';

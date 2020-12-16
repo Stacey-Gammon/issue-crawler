@@ -1,4 +1,4 @@
-import elasticsearch from 'elasticsearch';
+import  elasticsearch from '@elastic/elasticsearch';
 import { Api } from '../api_utils';
 import { getRefCnt } from './get_ref_cnt';
 export interface ApiDoc {

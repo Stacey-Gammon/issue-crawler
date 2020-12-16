@@ -2,13 +2,13 @@ import { checkoutRepo, checkoutRoundedDate, getCheckoutDates, getCommitDate, get
 import { getPluginInfoForRepo, indexPluginInfo } from "../plugin_utils";
 import { repo } from "./config";
 import { getRefCnt } from "./get_ref_cnt";
-import elasticsearch from 'elasticsearch';
-import { elasticsearchEnv } from "../config";
+import { Client } from '@elastic/elasticsearch';
+import { elasticsearchEnv } from "../es_config";
 
 export async function crawlPlugins() {
   const { repoPath, currentGit } = await checkoutRepo(repo, process.env.LOCAL_REPO_DIR);
 
-  const client = new elasticsearch.Client(elasticsearchEnv);
+  const client = new Client(elasticsearchEnv);
 
   for (const date of getCheckoutDates()) {
       const commitHash = await checkoutRoundedDate(repoPath, currentGit, date);

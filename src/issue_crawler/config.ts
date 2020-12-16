@@ -1,3 +1,5 @@
+import { ClientOptions } from "@elastic/elasticsearch";
+
 export const repos = [
 	'elastic/kibana',
   'elastic/kibana-team',
@@ -10,12 +12,6 @@ if (!process.env.GITHUB_OAUTH_TOKEN || !process.env.ES_HOST || !process.env.ES_A
 }
 
 export const githubAuth = process.env.GITHUB_OAUTH_TOKEN;
-
-export const elasticsearchEnv = {
-	host: process.env.ES_HOST,
-	httpAuth: process.env.ES_AUTH
-};
-
 
 export const codeRepos = [
   {
